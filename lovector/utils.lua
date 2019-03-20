@@ -24,38 +24,6 @@ SOFTWARE.
 
 local utils = {}
 
-function utils.xml_tostring(element, indent_string, lvl)
-    if lvl == nil then lvl = 0 end
-    if indent_string == nil then indent_string = "    " end
 
-    local result = ""
-
-    local indent = string.rep(indent_string, lvl)
-
-    local attr = ""
-
-    if element.attributes ~= nil then
-        for k, v in pairs(element.attributes) do
-            attr = attr .. " " .. k .. "=\"" .. tostring(v) .. "\""
-        end
-    end
-
-    -- empty element
-    if element.children == nil then
-        result = result .. indent .. "<" .. element.name .. attr .. " />\n"
-
-    -- regular element
-    else
-        result = result .. indent .. "<" .. element.name .. attr .. ">\n"
-
-        for _, v in ipairs(element.children) do
-            result = result .. utils.xml_tostring(v, indent_string, lvl + 1) .. "\n"
-        end
-
-        result = result .. indent .. "</" .. element.name .. ">\n"
-    end
-
-    return result:sub(1, #result - 1)
-end
 
 return utils

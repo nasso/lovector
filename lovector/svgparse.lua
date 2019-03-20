@@ -25,7 +25,7 @@ SOFTWARE.
 local cwd = (...):match('(.-)[^%.]+$')
 
 local utils = require(cwd .. "utils")
-local xmlparse = require(cwd .. "xmlparse")
+local DOM = require(cwd .. "dom")
 
 local function svgparse(source, options)
     local svg = {
@@ -36,9 +36,9 @@ local function svgparse(source, options)
         draw_function = 'local extdata = ...\n';
     }
 
-    local xml = xmlparse(source)
+    local document = DOM.Document(source)
 
-    print(utils.xml_tostring(xml.root))
+    print(document)
 
     svg.draw_function = assert(loadstring(svg.draw_function))
 
