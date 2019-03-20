@@ -22,8 +22,67 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local function _attributes(attributes)
-    return {}
+local TOKEN_LIST = {
+    [""] = "%s*";
+    ["Name"] = "([:A-Z_a-z][:A-Z_a-z0-9%-%.]*)";
+    ["Eq"] = "=";
+    ["AttValue"] = { "\"(.-)\"", "'(.-)'" };
+}
+
+for k, v in pairs(TOKEN_LIST) do
+    if k ~= "" then
+        if type(v) == "table" then
+            for i, vi in ipairs(v) do
+                v[i] = "^" .. TOKEN_LIST[""] .. vi .. TOKEN_LIST[""]
+            end
+
+        else
+            TOKEN_LIST[k] = "^" .. TOKEN_LIST[""] .. v .. TOKEN_LIST[""]
+        end
+    end
+end
+
+local function _attributes(text)
+    local attributes = {}
+
+    local i, j = 0, 0
+    local name, value = nil
+
+    while true do
+        _, i, name = text:find(TOKEN_LIST["Name"], i + 1)
+
+        -- If we didn't find a name, it's over
+        if i == nil then
+            break
+        end
+
+        -- Look for the =
+        _, j = text:find(TOKEN_LIST["Eq"], i + 1)
+
+        -- If we didn't find the =, just mark the attribute as true
+        if j == nil then
+            attributes[name] = true
+
+        -- If we found the =
+        else
+            -- we know j ~= nil, make it replace i
+            i = j
+
+            -- Look for the value!
+            for _, pattern in ipairs(TOKEN_LIST["AttValue"]) do
+                _, j, value = text:find(pattern, i + 1)
+
+                -- whenever the value is (finally) found
+                if value ~= nil then
+                    attributes[name] = value
+                    i = j
+                    break
+                end
+            end
+        end
+    end
+
+    return attributes
 end
 
 local function _element(name, attributes, children)
