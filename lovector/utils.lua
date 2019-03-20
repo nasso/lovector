@@ -36,19 +36,17 @@ function utils.xml_tostring(element, indent_string, lvl)
 
     if element.attributes ~= nil then
         for k, v in pairs(element.attributes) do
-            attr = attr .. k .. "=\"" .. tostring(v) .. "\" "
+            attr = attr .. " " .. k .. "=\"" .. tostring(v) .. "\""
         end
-
-        attr = attr:sub(1, #attr - 1)
     end
 
     -- empty element
     if element.children == nil then
-        result = result .. indent .. "<" .. element.name .. " " .. attr .. " />\n"
+        result = result .. indent .. "<" .. element.name .. attr .. " />\n"
 
     -- regular element
     else
-        result = result .. indent .. "<" .. element.name .. " " .. attr .. ">\n"
+        result = result .. indent .. "<" .. element.name .. attr .. ">\n"
 
         for _, v in ipairs(element.children) do
             result = result .. utils.xml_tostring(v, indent_string, lvl + 1) .. "\n"
