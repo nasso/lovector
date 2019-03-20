@@ -1,4 +1,3 @@
---[[
 MIT License
 
 Copyright (c) 2019 nasso <nassomails ~ at ~ gmail {dot} com>
@@ -20,29 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-]]
-
-local utils = {}
-
-function utils.print_xml_element(element, lvl)
-    if lvl == nil then lvl = 0 end
-
-    local indent = string.rep("  ", lvl)
-
-    -- empty element
-    if element.children == nil then
-        print(indent .. "<" .. element.name .. "/>")
-
-    -- regular element
-    else
-        print(indent .. "<" .. element.name .. ">")
-
-        for _, v in ipairs(element.children) do
-            utils.print_xml_element(v, lvl + 1)
-        end
-
-        print(indent .. "</" .. element.name .. ">")
-    end
-end
-
-return utils
