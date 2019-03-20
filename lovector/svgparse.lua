@@ -38,7 +38,7 @@ local function svgparse(source, options)
 
     local xml = xmlparse(source)
 
-    utils.print_xml_element(xml.root)
+    print(utils.xml_tostring(xml.root))
 
     svg.draw_function = assert(loadstring(svg.draw_function))
 
