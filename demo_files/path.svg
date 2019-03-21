@@ -127,9 +127,9 @@
                 <circle cx="100" cy="50" r="1.5" />
             </g>
 
-            <use xlink:href="#SmoothQuadraticDown" x="60" />
-            <use xlink:href="#SmoothQuadraticUp"   x="60" />
-            <use xlink:href="#SmoothQuadraticDown" x="120" />
+            <use href="#SmoothQuadraticDown" x="60" />
+            <use href="#SmoothQuadraticUp"   x="60" />
+            <use href="#SmoothQuadraticDown" x="120" />
         </g>
 
         <g transform="translate(200 100)">
