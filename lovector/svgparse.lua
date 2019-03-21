@@ -24,7 +24,6 @@ SOFTWARE.
 
 local cwd = (...):match('(.-)[^%.]+$')
 
-local utils = require(cwd .. "utils")
 local DOM = require(cwd .. "dom")
 
 local function svgparse(source, options)
