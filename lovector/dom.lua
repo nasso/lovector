@@ -220,7 +220,7 @@ function DOM.Element:appendChild(element)
     table.insert(self.children, element)
 end
 
-function DOM.Element:getAttribute(name, inherit)
+function DOM.Element:getAttribute(name, inherit, default)
     local value = nil
     local this = self
 
@@ -234,7 +234,12 @@ function DOM.Element:getAttribute(name, inherit)
         -- Repeat if the attribute is to be inherited
     until not (inherit and value == nil and this ~= nil)
 
-    return value
+    if value == nil then
+        return default
+
+    else
+        return value
+    end
 end
 
 function DOM.Element:__tostring()
