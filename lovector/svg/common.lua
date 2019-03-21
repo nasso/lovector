@@ -38,6 +38,12 @@ local INHERIT = {
     ["stroke-width"] = true;
 }
 
+local ELEMENTS = {
+    ["path"] = "path";
+    ["g"] = "g";
+    ["svg"] = "svg";
+}
+
 local common = {}
 
 function common.transformparse(svg, transform)
@@ -318,7 +324,7 @@ function common.gensubpath(svg, element, vertices, closed, options)
             table.insert(svg.extdata, assert(loadstring(stencil_fn))(svg.extdata))
 
             result = result ..
-                "love.graphics.stencil(extdata[" .. (#extdata) .. "], \"invert\")\n" ..
+                "love.graphics.stencil(extdata[" .. (#svg.extdata) .. "], \"invert\")\n" ..
                 "love.graphics.setStencilTest(\"notequal\", 0)\n" ..
                 "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
                 "love.graphics.rectangle(\"fill\", " .. minx .. ", " .. miny .. ", " .. (maxx-minx) .. ", " .. (maxy-miny) .. ")" ..
@@ -339,6 +345,48 @@ function common.gensubpath(svg, element, vertices, closed, options)
     end
 
     return result
+end
+
+function common.gen(svg, element, options)
+    local renderer = ELEMENTS[element.name]
+
+    -- No renderer for this element
+    if renderer == nil then
+        if options.debug then
+            print("No renderer for <" .. element.name .. ">")
+        end
+
+        return ""
+    end
+
+    -- Load the renderer
+    renderer = require(cwd .. "svg.renderer." .. ELEMENTS[element.name])
+
+    -- Empty elements
+    if element.children == nil then
+        if renderer.empty == nil then
+            return ""
+        end
+
+        return renderer.empty(element, svg, options)
+    end
+
+    -- Containers
+    local result = nil
+    local state = nil
+
+    if renderer.open ~= nil then
+        result, state = renderer.open(element, svg, options)
+    else
+        result = ""
+    end
+
+    for i = 1, #(element.children) do
+        result = result .. common.gen(svg, element.children[i], options)
+    end
+
+
+    return result .. renderer.close(element, state, svg, options)
 end
 
 return common

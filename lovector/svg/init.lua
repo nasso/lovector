@@ -24,15 +24,13 @@ SOFTWARE.
 
 local cwd = (...):match('(.*lovector).-$') .. "."
 local DOM = require(cwd .. "dom")
+local common = require(cwd .. "svg.common")
 
 local DEFAULT_OPTIONS = {
     ["arc_segments"] = 50;
     ["bezier_depth"] = 5;
-    ["use_love_fill"] = true;
-}
-
-local ELEMENTS = {
-    ["path"] = require(cwd .. "svg.path")
+    ["debug"] = true;
+    ["use_love_fill"] = false;
 }
 
 local SVG = {}
@@ -67,26 +65,17 @@ function SVG.mt.__call(_, svg, options)
         svg = contents
     end
 
-    -- Parse XML
-    local document = DOM.Document(svg)
-
     -- SVG object
-    local svg = {
+    svg = {
+        document = DOM.Document(svg);
         width = 0;
         height = 0;
-        viewport = nil;
         extdata = {};
         script = 'local extdata = ...\n';
     }
 
     -- Parse SVG
-    for i = 1, #(document.linear_list) do
-        local element = document.linear_list[i]
-
-        if ELEMENTS[element.name] then
-            ELEMENTS[element.name](element, svg, options)
-        end
-    end
+    svg.script = svg.script .. common.gen(svg, svg.document.root, options)
 
     -- Create draw_function
     svg.script = assert(loadstring(svg.script))
@@ -124,6 +113,16 @@ function SVG:draw(x, y, sx, sy)
 
         -- reset graphics
         love.graphics.pop()
+    end
+end
+
+function SVG:release()
+    for i = 1, #(self.extdata) do
+        local data = self.extdata[i]
+
+        if type(data.release) == "function" then
+            data:release()
+        end
     end
 end
 

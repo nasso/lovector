@@ -61,7 +61,7 @@ function love.load()
 	})
 
 	-- tiggie!
-	-- pics[2] = lovector.loadsvg("demo_files/ghostscript-tiger.svg")
+	pics[2] = lovector.SVG("demo_files/ghostscript-tiger.svg")
 end
 
 function love.update(dt)
@@ -96,8 +96,8 @@ function love.draw()
 	love.graphics.translate(-cameraX, -cameraY)
 
 	-- draw any scheduled SVGs
-	pics[1]:draw(0, 0, 1)
-	-- pics[2]:draw(550, 100, 500)
+	pics[1]:draw(0, 0, 10)
+	pics[2]:draw(550, 100, 0.5)
 
 	love.graphics.pop()
 end

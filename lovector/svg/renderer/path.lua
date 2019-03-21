@@ -25,11 +25,19 @@ SOFTWARE.
 local cwd = (...):match('(.*lovector).-$') .. "."
 local common = require(cwd .. "svg.common")
 
-function path(self, svg, options)
-    -- d (definition)
+local renderer = {}
+
+function renderer:empty(svg, options)
     local pathdef = common.get_attr(self, "d")
 
+    -- in case a genius put a <path> without a path
+    if pathdef == nil then
+        return ""
+    end
+
     -- output
+    local result = ""
+
     local ipx = 0
     local ipy = 0
     local cpx = 0
@@ -38,7 +46,7 @@ function path(self, svg, options)
     local prev_ctrly = 0
     local vertices = {}
 
-    --  iterate through all dem commands
+    -- iterate through all dem commands
     for op, strargs in string.gmatch(pathdef, "%s*([MmLlHhVvCcSsQqTtAaZz])%s*([^MmLlHhVvCcSsQqTtAaZz]*)%s*") do
         local args = {}
 
@@ -51,7 +59,7 @@ function path(self, svg, options)
 
         -- move to
         if op == "M" then
-            svg.script = svg.script .. common.gensubpath(svg, self, vertices, false, options)
+            result = result .. common.gensubpath(svg, self, vertices, false, options)
             vertices = {}
 
             ipx = table.remove(args)
@@ -72,7 +80,7 @@ function path(self, svg, options)
 
         -- move to (relative)
         elseif op == "m" then
-            svg.script = svg.script .. common.gensubpath(svg, self, vertices, false, options)
+            result = result .. common.gensubpath(svg, self, vertices, false, options)
             vertices = {}
 
             ipx = cpx + table.remove(args)
@@ -430,7 +438,7 @@ function path(self, svg, options)
 
         -- close shape (relative and absolute are the same)
         elseif op == "Z" or op == "z" then
-            svg.script = svg.script .. common.gensubpath(svg, self, vertices, true, options)
+            result = result .. common.gensubpath(svg, self, vertices, true, options)
 
             cpx = ipx
             cpy = ipy
@@ -447,15 +455,17 @@ function path(self, svg, options)
     end
 
     -- one last time~!
-    svg.script = svg.script .. common.gensubpath(svg, self, vertices, false, options)
+    result = result .. common.gensubpath(svg, self, vertices, false, options)
 
     if common.get_attr(self, "transform") ~= nil then
-        svg.script =
+        result =
             "love.graphics.push()\n" ..
             common.transformparse(svg, common.get_attr(self, "transform")) ..
-            svg.script ..
+            result ..
             "love.graphics.pop()\n"
     end
+
+    return result
 end
 
-return path
+return renderer
