@@ -136,6 +136,7 @@ function DOM.Document.mt.__call(_, source)
     local self = {}
 
     self.root = nil
+    self.linear_list = {}
     self.idmap = {}
 
     local current_parent = self.root
@@ -147,6 +148,9 @@ function DOM.Document.mt.__call(_, source)
         if not closes then
             local element = DOM.Element(name, _attributes(attributes))
             element.parent = current_parent
+
+            -- Put it in the linear element table
+            table.insert(self.linear_list, element)
 
             -- Cache id
             if element:getAttribute("id") ~= nil then
