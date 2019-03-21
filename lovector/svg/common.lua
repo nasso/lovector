@@ -50,7 +50,7 @@ function common.transformparse(svg, transform)
         -- parse command arguments
         if strargs ~= nil and #strargs > 0 then
             for arg in string.gmatch(strargs, "%-?[^%s,%-]+") do
-               table.insert(args, 1, tonumber(arg,10))
+               table.insert(args, 1, tonumber(arg, 10))
             end
         end
 
@@ -276,16 +276,16 @@ function common.gensubpath(svg, element, vertices, closed, options)
     local s_red, s_green, s_blue, s_alpha = colorparse(common.get_attr(element, "stroke", "none"))
 
     --  opacity
-    local opacity = tonumber(common.get_attr(element, "opacity", "1"),10)
+    local opacity = tonumber(common.get_attr(element, "opacity", "1"), 10)
 
     --  fill-opacity
-    local f_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"),10)
+    local f_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"), 10)
 
     --  stroke-opacity
-    local s_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"),10)
+    local s_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"), 10)
 
     -- stroke
-    local linewidth = tonumber(common.get_attr(element, "stroke-width", "1"),10)
+    local linewidth = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
 
     -- check if we're even going to draw anything
     if f_red == nil and s_red == nil then
@@ -298,7 +298,7 @@ function common.gensubpath(svg, element, vertices, closed, options)
     if f_red ~= nil and vertexcount >= 6 then
         if options.use_love_fill == true then
             result = result ..
-                "love.graphics.setColor(" .. f_red .. "," .. f_green .. "," .. f_blue .. "," .. (f_alpha * f_opacity * opacity) .. ")\n" ..
+                "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
                 "love.graphics.polygon(\"fill\", extdata[" .. bufferid .. "])"
         else
             local minx, miny, maxx, maxy = vertices[1], vertices[2], vertices[1], vertices[2]
@@ -320,15 +320,15 @@ function common.gensubpath(svg, element, vertices, closed, options)
             result = result ..
                 "love.graphics.stencil(extdata[" .. (#extdata) .. "], \"invert\")\n" ..
                 "love.graphics.setStencilTest(\"notequal\", 0)\n" ..
-                "love.graphics.setColor(" .. f_red .. "," .. f_green .. "," .. f_blue .. "," .. (f_alpha * f_opacity * opacity) .. ")\n" ..
-                "love.graphics.rectangle(\"fill\"," .. minx .. "," .. miny .. "," .. (maxx-minx) .. "," .. (maxy-miny) .. ")" ..
+                "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
+                "love.graphics.rectangle(\"fill\", " .. minx .. ", " .. miny .. ", " .. (maxx-minx) .. ", " .. (maxy-miny) .. ")" ..
                 "love.graphics.setStencilTest()\n"
         end
     end
 
     -- stroke
     if s_red ~= nil and vertexcount >= 4 then
-        result = result .. "love.graphics.setColor(" .. s_red .. "," .. s_green .. "," .. s_blue .. "," .. (s_alpha * s_opacity * opacity) .. ")\n"
+        result = result .. "love.graphics.setColor(" .. s_red .. ", " .. s_green .. ", " .. s_blue .. ", " .. (s_alpha * s_opacity * opacity) .. ")\n"
         result = result .. "love.graphics.setLineWidth(" .. linewidth .. ")\n"
 
         if closed == true then
