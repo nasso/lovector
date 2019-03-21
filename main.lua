@@ -47,7 +47,7 @@ function love.load()
 	love.graphics.setBackgroundColor(1, 1, 1)
 
 	-- <path> demo
-	pics[1] = lovector.loadsvg("demo_files/path.svg", {
+	pics[1] = lovector.SVG("demo_files/path.svg", {
 		--  - That's the default value for bezier_depth:
 		-- bezier_depth = 5;
 
