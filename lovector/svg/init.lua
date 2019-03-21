@@ -22,13 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local cwd = (...):match('(.-)[^%.]+$')
-
+local cwd = (...):match('(.*lovector).-$') .. "."
 local DOM = require(cwd .. "dom")
 
 local DEFAULT_OPTIONS = {
-    bezier_depth = 5;
-    use_love_fill = true;
+    ["arc_segments"] = 50;
+    ["bezier_depth"] = 5;
+    ["use_love_fill"] = true;
+}
+
+local ELEMENTS = {
+    ["path"] = require(cwd .. "svg.path")
 }
 
 local SVG = {}
@@ -72,13 +76,20 @@ function SVG.mt.__call(_, svg, options)
         height = 0;
         viewport = nil;
         extdata = {};
-        draw_function = 'local extdata = ...\n';
+        script = 'local extdata = ...\n';
     }
 
     -- Parse SVG
+    for i = 1, #(document.linear_list) do
+        local element = document.linear_list[i]
+
+        if ELEMENTS[element.name] then
+            ELEMENTS[element.name](element, svg, options)
+        end
+    end
 
     -- Create draw_function
-    svg.draw_function = assert(loadstring(svg.draw_function))
+    svg.script = assert(loadstring(svg.script))
 
     return setmetatable(svg, SVG)
 end
@@ -109,7 +120,7 @@ function SVG:draw(x, y, sx, sy)
         end
 
         -- draw
-        self.draw_function(self.extdata)
+        self.script(self.extdata)
 
         -- reset graphics
         love.graphics.pop()
