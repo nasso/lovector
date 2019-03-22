@@ -39,8 +39,9 @@ local INHERIT = {
 }
 
 local ELEMENTS = {
-    ["path"] = "path";
     ["g"] = "g";
+    ["path"] = "path";
+    ["rect"] = "rect";
     ["svg"] = "svg";
 }
 
