@@ -147,6 +147,10 @@ end
 function PathBuilder:closePath()
     if self.current_subpath ~= nil then
         self.current_subpath.closed = true
+
+        if #(self.current_subpath.vertices) >= 2 then
+            self:moveTo(self.current_subpath.vertices[1], self.current_subpath.vertices[2])
+        end
     end
 end
 
