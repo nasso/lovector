@@ -45,7 +45,7 @@ function love.load()
 		vsync = false;
 	})
 
-	love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
+	love.graphics.setBackgroundColor(1, 1, 1)
 
 	-- <path> demo
 	pics[1] = lovector.SVG("demo_files/path.svg", {
