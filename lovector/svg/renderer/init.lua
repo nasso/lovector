@@ -25,7 +25,7 @@ SOFTWARE.
 return {
     ["circle"] = "circle";
     ["ellipse"] = "ellipse";
-    ["g"] = "g";
+    ["g"] = "";
     ["line"] = "line";
     ["path"] = "path";
     ["polygon"] = "poly";

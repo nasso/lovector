@@ -89,7 +89,7 @@ function renderer:empty(svg, options)
 
     -- add transform
     if x ~= 0 or y ~= 0 then
-        g:setAttribute("transform", "translate(" .. x .. ", " .. y .. ")")
+        g:setAttribute("transform", common.get_attr(g, "transform", "") .. " translate(" .. x .. ", " .. y .. ")")
     end
 
     -- add the cloned element

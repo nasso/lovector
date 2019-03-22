@@ -71,8 +71,4 @@ function renderer:open(svg, options)
     return ""
 end
 
-function renderer:close(state, svg, options)
-    return ""
-end
-
 return renderer

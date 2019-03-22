@@ -47,17 +47,13 @@ function renderer:empty(svg, options)
         return ""
     end
 
-    local result = ""
-
-    result = result .. common.gen_subpath(
+    return common.gen_subpath(
         svg,
         self,
         vertices,
         self.name == "polygon", -- closed if it's a polygon
         options
     )
-
-    return result
 end
 
 return renderer

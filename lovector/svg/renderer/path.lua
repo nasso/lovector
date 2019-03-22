@@ -303,18 +303,7 @@ function renderer:empty(svg, options)
     end
 
     -- render everything!
-    local result = common.gen_path(svg, self, path, options)
-
-    -- don't forget to eventually transform it
-    if common.get_attr(self, "transform") ~= nil then
-        result =
-            "love.graphics.push()\n" ..
-            common.transformparse(svg, common.get_attr(self, "transform")) ..
-            result ..
-            "love.graphics.pop()\n"
-    end
-
-    return result
+    return common.gen_path(svg, self, path, options)
 end
 
 return renderer

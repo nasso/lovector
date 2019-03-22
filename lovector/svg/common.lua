@@ -498,7 +498,7 @@ end
 function common.gen(svg, element, options)
     local content = element
 
-    repeat
+    while true do
         local renderer = ELEMENTS[content.name]
 
         -- No renderer for this element
@@ -510,12 +510,21 @@ function common.gen(svg, element, options)
             return ""
         end
 
-        -- Load the renderer
-        renderer = require(cwd .. "svg.renderer." .. ELEMENTS[content.name])
+        if renderer == "" then
+            renderer = nil
+        end
+
+        -- Load the renderer, if any
+        if renderer ~= nil then
+            renderer = require(cwd .. "svg.renderer." .. ELEMENTS[content.name])
+        end
+
+        -- Transform attribute
+        local transform = common.get_attr(content, "transform")
 
         -- Empty elements
         if content.children == nil then
-            if renderer.empty == nil then
+            if renderer == nil or renderer.empty == nil then
                 return ""
             end
 
@@ -525,22 +534,44 @@ function common.gen(svg, element, options)
         else
             local result = nil
             local state = nil
+            local include_children = true
 
-            if renderer.open ~= nil then
-                result, state = renderer.open(content, svg, options)
+            if renderer ~= nil and renderer.open ~= nil then
+                result, state, include_children = renderer.open(content, svg, options)
+
+                include_children = include_children ~= false
             else
                 result = ""
             end
 
-            for i = 1, #(content.children) do
-                result = result .. common.gen(svg, content.children[i], options)
+            if include_children then
+                for i = 1, #(content.children) do
+                    result = result .. common.gen(svg, content.children[i], options)
+                end
             end
 
-            content = result .. renderer.close(content, state, svg, options)
-        end
-    until type(content) == "string"
+            if renderer ~= nil and renderer.close ~= nil then
+                result = result .. renderer.close(content, state, svg, options)
+            end
 
-    return content
+            content = result
+        end
+
+        -- If the content is (finally) a string
+        if type(content) == "string" then
+            -- Apply eventual transform so that everyone doesn't have to do it themselves
+            if transform ~= nil then
+                content =
+                    "love.graphics.push()\n" ..
+                    common.transform_parse(svg, transform) ..
+                    content ..
+                    "love.graphics.pop()\n"
+            end
+
+            -- Leave!
+            return content
+        end
+    end
 end
 
 return common
