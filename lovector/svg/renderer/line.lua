@@ -22,15 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-return {
-    ["circle"] = "circle";
-    ["ellipse"] = "ellipse";
-    ["g"] = "g";
-    ["line"] = "line";
-    ["path"] = "path";
-    ["polygon"] = "poly";
-    ["polyline"] = "poly";
-    ["rect"] = "rect";
-    ["svg"] = "svg";
-    ["use"] = "use";
-}
+local cwd = (...):match('(.*lovector).-$') .. "."
+local common = require(cwd .. "svg.common")
+
+local renderer = {}
+
+function renderer:empty(svg, options)
+    local x1 = tonumber(common.get_attr(self, "x1", "0"), 10)
+    local y1 = tonumber(common.get_attr(self, "y1", "0"), 10)
+    local x2 = tonumber(common.get_attr(self, "x2", "0"), 10)
+    local y2 = tonumber(common.get_attr(self, "y2", "0"), 10)
+
+    if x1 == x2 and y1 == y2 then
+        return ""
+    end
+
+    return common.gen_subpath(svg, self, {}, false, options)
+end
+
+return renderer
