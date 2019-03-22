@@ -413,7 +413,7 @@ function renderer:empty(svg, options)
                 common.buildarc(cpx, cpy, rx, ry, angle, large_arc_flag, sweep_flag, x, y, options["arc_segments"], vertices)
 
                 cpx = x
-                cpy =
+                cpy = y
 
                 table.insert(vertices, cpx)
                 table.insert(vertices, cpy)
