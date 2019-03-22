@@ -262,4 +262,37 @@ function PathBuilder:ellipticalArcTo(rx, ry, phi, fa, fs, x, y)
     end
 end
 
+function PathBuilder:arc(x, y, radius, startAngle, endAngle, counterclockwise)
+    self:ensureSubPath()
+
+    local segments = math.max(self.options["arc_segments"], 1)
+
+    counterclockwise = counterclockwise or false
+
+    local dtheta = endAngle - startAngle
+
+    -- when it's the whole circumference
+    if
+        (not counterclockwise and dtheta >= 360) or
+        (counterclockwise and dtheta <= -360)
+    then
+        dtheta = math.min(360, math.max(-360, dtheta))
+    end
+
+    if counterclockwise ~= (dtheta > 0) then
+        dtheta = -dtheta
+        startAngle = endAngle
+    end
+
+    -- build it
+    for i = 0, segments do
+        local theta = math.rad(startAngle + dtheta * (i / segments))
+        local cos_theta = math.cos(theta)
+        local sin_theta = math.sin(theta)
+
+        table.insert(self.current_subpath.vertices, radius * cos_theta + x)
+        table.insert(self.current_subpath.vertices, radius * sin_theta + y)
+    end
+end
+
 return PathBuilder
