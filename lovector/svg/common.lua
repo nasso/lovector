@@ -25,7 +25,7 @@ SOFTWARE.
 local cwd = (...):match('(.*lovector).-$') .. "."
 local ELEMENTS = require(cwd .. "svg.renderer")
 
-local NAMES = {
+local COLOR_NAMES = {
     ["aliceblue"] = {240,248,255,255};
     ["antiquewhite"] = {250,235,215,255};
     ["aqua"] = {0,255,255,255};
@@ -205,8 +205,8 @@ function common.colorparse(str, default_r, default_g, default_b, default_a)
         end
 
         -- color name
-        if NAMES[str] ~= nil then
-            local color = NAMES[str]
+        if COLOR_NAMES[str] ~= nil then
+            local color = COLOR_NAMES[str]
             return color[1] / 255, color[2] / 255, color[3] / 255, color[4] / 255
 
         -- #FFFFFF
