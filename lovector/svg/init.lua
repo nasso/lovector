@@ -75,13 +75,21 @@ function SVG.mt.__call(_, svg, options)
         script = 'local extdata = ...\n';
     }
 
+    -- set the metatable now so that we can use it when parsing the SVG
+    setmetatable(svg, SVG)
+
     -- Parse SVG
     svg.script = svg.script .. common.gen(svg, svg.document.root, options)
 
     -- Create draw_function
     svg.script = assert(loadstring(svg.script))
 
-    return setmetatable(svg, SVG)
+    return svg
+end
+
+function SVG:putData(data)
+    table.insert(self.extdata, data)
+    return "extdata[" .. #(self.extdata) .. "]"
 end
 
 function SVG:draw(x, y, sx, sy)

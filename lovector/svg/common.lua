@@ -333,10 +333,8 @@ function common.transform_parse(svg, transform)
                 0, 0, 1, 0,
                 0, 0, 0, 1
             )
-            table.insert(svg.extdata, matrix)
 
-            result = result .. "love.graphics.applyTransform(extdata[" .. (#svg.extdata) .. "])\n"
-
+            result = result .. "love.graphics.applyTransform(" .. svg:putData(matrix) .. ")\n"
         elseif cmd == "skewX" then
             local a = table.remove(args)
 
@@ -403,9 +401,7 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     end
 
     -- add the new, clean vertex buffer to the data
-    table.insert(svg.extdata, vertices)
-
-    local bufferid = #svg.extdata
+    local bufferid = svg:putData(vertices)
 
     -- attributes!
 
@@ -433,7 +429,7 @@ function common.gen_subpath(svg, element, vertices, closed, options)
         if options.use_love_fill == true then
             result = result ..
                 "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
-                "love.graphics.polygon(\"fill\", extdata[" .. bufferid .. "])"
+                "love.graphics.polygon(\"fill\", " .. bufferid .. ")"
         else
             local minx, miny, maxx, maxy = vertices[1], vertices[2], vertices[1], vertices[2]
 
@@ -446,13 +442,11 @@ function common.gen_subpath(svg, element, vertices, closed, options)
 
             local stencil_fn =
                 "local extdata = ...\n" ..
-                "return function() love.graphics.polygon(\"fill\", extdata[" .. bufferid .. "]) end\n"
+                "return function() love.graphics.polygon(\"fill\", " .. bufferid .. ") end\n"
 
-            -- insert the stencil rendering function
-            table.insert(svg.extdata, assert(loadstring(stencil_fn))(svg.extdata))
-
+            -- use the stencil rendering function
             result = result ..
-                "love.graphics.stencil(extdata[" .. (#svg.extdata) .. "], \"invert\")\n" ..
+                "love.graphics.stencil(" .. svg:putData(assert(loadstring(stencil_fn))(svg.extdata)) .. ", \"invert\")\n" ..
                 "love.graphics.setStencilTest(\"notequal\", 0)\n" ..
                 "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
                 "love.graphics.rectangle(\"fill\", " .. minx .. ", " .. miny .. ", " .. (maxx-minx) .. ", " .. (maxy-miny) .. ")" ..
@@ -466,9 +460,9 @@ function common.gen_subpath(svg, element, vertices, closed, options)
         result = result .. "love.graphics.setLineWidth(" .. linewidth .. ")\n"
 
         if closed == true then
-            result = result .. "love.graphics.polygon(\"line\", extdata[" .. bufferid .. "])\n"
+            result = result .. "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
         else
-            result = result .. "love.graphics.line(extdata[" .. bufferid .. "])\n"
+            result = result .. "love.graphics.line(" .. bufferid .. ")\n"
         end
 
         if options["stroke_debug"] then
