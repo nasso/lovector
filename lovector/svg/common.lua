@@ -253,10 +253,12 @@ function common.gensubpath(svg, element, vertices, closed, options)
             result = result .. "love.graphics.line(extdata[" .. bufferid .. "])\n"
         end
 
-        local r,g,b = common.HSL(math.random(), 1, .5)
-        result = result .. "love.graphics.setColor(" .. r .. ", " .. g .. ", " .. b .. ",.5)\n"
-        result = result .. "love.graphics.setPointSize(5)\n"
-        result = result .. "love.graphics.points(extdata[" .. bufferid .. "])\n"
+        if options["stroke_debug"] then
+            local r,g,b = common.HSL(math.random(), 1, .5)
+            result = result .. "love.graphics.setColor(" .. r .. ", " .. g .. ", " .. b .. ",.5)\n"
+            result = result .. "love.graphics.setPointSize(5)\n"
+            result = result .. "love.graphics.points(extdata[" .. bufferid .. "])\n"
+        end
     end
 
     return result
