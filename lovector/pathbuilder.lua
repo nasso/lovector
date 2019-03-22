@@ -252,17 +252,14 @@ function PathBuilder:ellipticalArcTo(rx, ry, phi, fa, fs, x, y)
 
     local cx, cy, theta1, dtheta = endpoint2center(sx, sy, x, y, fa, fs, rx, ry, phi)
 
-    for i = 1, segments do
-        local theta = math.rad(theta1 + dtheta * (i / segments))
-        local cos_theta = math.cos(theta)
-        local sin_theta = math.sin(theta)
-
-        table.insert(self.current_subpath.vertices, cos_phi * rx * cos_theta - sin_phi * ry * sin_theta + cx)
-        table.insert(self.current_subpath.vertices, sin_phi * rx * cos_theta + cos_phi * ry * sin_theta + cy)
-    end
+    self:ellipticalArc(cx, cy, rx, ry, theta1, theta1 + dtheta, dtheta < 0, phi)
 end
 
 function PathBuilder:arc(x, y, radius, startAngle, endAngle, counterclockwise)
+    self:ellipticalArc(x, y, radius, radius, startAngle, endAngle, counterclockwise, rotation)
+end
+
+function PathBuilder:ellipticalArc(cx, cy, rx, ry, startAngle, endAngle, counterclockwise, rotation)
     self:ensureSubPath()
 
     local segments = math.max(self.options["arc_segments"], 1)
@@ -284,14 +281,19 @@ function PathBuilder:arc(x, y, radius, startAngle, endAngle, counterclockwise)
         startAngle = endAngle
     end
 
+    -- rotation
+    local rad_phi = math.rad((rotation or 0) % 360)
+    local cos_phi = math.cos(rad_phi)
+    local sin_phi = math.sin(rad_phi)
+
     -- build it
     for i = 0, segments do
         local theta = math.rad(startAngle + dtheta * (i / segments))
         local cos_theta = math.cos(theta)
         local sin_theta = math.sin(theta)
 
-        table.insert(self.current_subpath.vertices, radius * cos_theta + x)
-        table.insert(self.current_subpath.vertices, radius * sin_theta + y)
+        table.insert(self.current_subpath.vertices, cos_phi * rx * cos_theta - sin_phi * ry * sin_theta + cx)
+        table.insert(self.current_subpath.vertices, sin_phi * rx * cos_theta + cos_phi * ry * sin_theta + cy)
     end
 end
 
