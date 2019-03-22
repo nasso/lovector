@@ -188,7 +188,7 @@
         </g>
 
         <g transform="translate(0 500)">
-            <rect x="1" y="1" width="1198" height="398"
+            <rect x="1" y="1" rx="50" width="1198" height="398"
                   fill="none" stroke="blue" stroke-width="1" />
 
             <path fill="red" stroke="blue" stroke-width="5"
