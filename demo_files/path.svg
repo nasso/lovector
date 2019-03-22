@@ -18,6 +18,15 @@
                    m-20,10 h 10" />
         </g>
 
+        <g transform="translate(200 0)">
+              <path fill="none" stroke="red"
+                    d="M 10,30
+                       A 20,20 0,0,1 50,30
+                       A 20,20 0,0,1 90,30
+                       Q 90,60 50,90
+                       Q 10,60 10,30 z" />
+        </g>
+
         <g transform="translate(150 50)">
             <rect x="-30" y="-30" width="60" height="60" />
 
@@ -45,31 +54,31 @@
 
         <g transform="translate(0 200)">
             <!-- Cubic Bézier curve with absolute coordinates -->
-            <path fill="none" stroke="#f00"
-                d="M 10,90
-                   C 30,90 25,10 50,10
-                   S 70,90 90,90" />
+            <path fill="none" stroke="red"
+                  d="M 10,90
+                     C 30,90 25,10 50,10
+                     S 70,90 90,90" />
 
             <!-- Cubic Bézier curve with relative coordinates -->
-            <path fill="none" stroke="#f00"
-                d="M 110,90
-                   c 20,0 15,-80 40,-80
-                   s 20,80 40,80" />
+            <path fill="none" stroke="red"
+                  d="M 110,90
+                     c 20,0 15,-80 40,-80
+                     s 20,80 40,80" />
 
             <!-- Highlight the curve vertex and control points -->
-            <g>
+            <g id="ControlPoints">
                 <!-- First cubic command control points -->
-                <path stroke="#d3d3d3" d="M10,90,30,90" />
+                <line x1="10" y1="90" x2="30" y2="90" stroke="lightgrey" />
                 <circle cx="30" cy="90" r="1.5"/>
 
-                <path stroke="#d3d3d3" d="M50,10,25,10" />
+                <line x1="50" y1="10" x2="25" y2="10" stroke="lightgrey" />
                 <circle cx="25" cy="10" r="1.5"/>
 
                 <!-- Second smooth command control points (the first one is implicit) -->
-                <path stroke="#d3d3d3" stroke-dasharray="2" d="M50,10,75,10" />
-                <circle cx="75" cy="10" r="1.5" fill="#d3d3d3"/>
+                <line x1="50" y1="10" x2="75" y2="10" stroke="lightgrey" stroke-dasharray="2" />
+                <circle cx="75" cy="10" r="1.5" fill="lightgrey"/>
 
-                <path stroke="#d3d3d3" d="M90,90,70,90" />
+                <line x1="90" y1="90" x2="70" y2="90" stroke="lightgrey" />
                 <circle cx="70" cy="90" r="1.5" />
 
                 <!-- curve vertex points -->
@@ -78,26 +87,7 @@
                 <circle cx="90" cy="90" r="1.5"/>
             </g>
 
-            <g transform="translate(100 0)">
-                <!-- First cubic command control points -->
-                <path stroke="#d3d3d3" d="M10,90,30,90" />
-                <circle cx="30" cy="90" r="1.5"/>
-
-                <path stroke="#d3d3d3" d="M50,10,25,10" />
-                <circle cx="25" cy="10" r="1.5"/>
-
-                <!-- Second smooth command control points (the first one is implicit) -->
-                <path stroke="#d3d3d3" stroke-dasharray="2" d="M50,10,75,10" />
-                <circle cx="75" cy="10" r="1.5" fill="#d3d3d3"/>
-
-                <path stroke="#d3d3d3" d="M90,90,70,90" />
-                <circle cx="70" cy="90" r="1.5" />
-
-                <!-- curve vertex points -->
-                <circle cx="10" cy="90" r="1.5"/>
-                <circle cx="50" cy="10" r="1.5"/>
-                <circle cx="90" cy="90" r="1.5"/>
-            </g>
+            <use xlink:href="#ControlPoints" x="100" />
         </g>
 
         <g transform="translate(0 300)">
@@ -135,8 +125,8 @@
         <g transform="translate(200 100)">
             <!-- Using g to inherit presentation attributes -->
             <g fill="white" stroke="green" stroke-width="5">
-                <ellipse cx="40" cy="40" rx="25" ry="50" />
-                <circle cx="60" cy="60" r="25" />
+                <ellipse cx="50" cy="40" rx="40" ry="20" />
+                <circle cx="70" cy="60" r="25" />
             </g>
         </g>
 

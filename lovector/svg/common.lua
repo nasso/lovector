@@ -496,45 +496,51 @@ function common.HSL(h, s, l, a)
 end
 
 function common.gen(svg, element, options)
-    local renderer = ELEMENTS[element.name]
+    local content = element
 
-    -- No renderer for this element
-    if renderer == nil then
-        if options.debug then
-            print("No renderer for <" .. element.name .. ">")
-        end
+    repeat
+        local renderer = ELEMENTS[content.name]
 
-        return ""
-    end
+        -- No renderer for this element
+        if renderer == nil then
+            if options.debug then
+                print("No renderer for <" .. content.name .. ">")
+            end
 
-    -- Load the renderer
-    renderer = require(cwd .. "svg.renderer." .. ELEMENTS[element.name])
-
-    -- Empty elements
-    if element.children == nil then
-        if renderer.empty == nil then
             return ""
         end
 
-        return renderer.empty(element, svg, options)
-    end
+        -- Load the renderer
+        renderer = require(cwd .. "svg.renderer." .. ELEMENTS[content.name])
 
-    -- Containers
-    local result = nil
-    local state = nil
+        -- Empty elements
+        if content.children == nil then
+            if renderer.empty == nil then
+                return ""
+            end
 
-    if renderer.open ~= nil then
-        result, state = renderer.open(element, svg, options)
-    else
-        result = ""
-    end
+            content = renderer.empty(content, svg, options)
 
-    for i = 1, #(element.children) do
-        result = result .. common.gen(svg, element.children[i], options)
-    end
+        -- Containers
+        else
+            local result = nil
+            local state = nil
 
+            if renderer.open ~= nil then
+                result, state = renderer.open(content, svg, options)
+            else
+                result = ""
+            end
 
-    return result .. renderer.close(element, state, svg, options)
+            for i = 1, #(content.children) do
+                result = result .. common.gen(svg, content.children[i], options)
+            end
+
+            content = result .. renderer.close(content, state, svg, options)
+        end
+    until type(content) == "string"
+
+    return content
 end
 
 return common

@@ -242,6 +242,40 @@ function DOM.Element:getAttribute(name, inherit, default)
     end
 end
 
+function DOM.Element:setAttribute(name, value)
+    if self.attributes == nil then
+        self.attributes = {}
+    end
+
+    self.attributes[name] = value
+end
+
+function DOM.Element:clone()
+    local attributes_copy = nil
+    local children_copy = nil
+
+    -- clone attributes
+    if self.attributes ~= nil then
+        attributes_copy = {}
+
+        for k, v in pairs(self.attributes) do
+            attributes_copy[k] = v
+        end
+    end
+
+    -- clone children
+    if self.children ~= nil then
+        children_copy = {}
+
+        -- recursively clone children
+        for _, child in ipairs(self.children) do
+            table.insert(children_copy, child:clone())
+        end
+    end
+
+    return DOM.Element(self.name, attributes_copy, children_copy)
+end
+
 function DOM.Element:__tostring()
     return element_tostring(self)
 end

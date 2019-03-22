@@ -23,12 +23,13 @@ SOFTWARE.
 ]]
 
 return {
-    ["polygon"] = "poly";
-    ["polyline"] = "poly";
-    ["ellipse"] = "ellipse";
     ["circle"] = "circle";
+    ["ellipse"] = "ellipse";
     ["g"] = "g";
     ["path"] = "path";
+    ["polygon"] = "poly";
+    ["polyline"] = "poly";
     ["rect"] = "rect";
     ["svg"] = "svg";
+    ["use"] = "use";
 }
