@@ -279,7 +279,7 @@ function PathBuilder:arc(x, y, radius, startAngle, endAngle, counterclockwise)
         dtheta = math.min(360, math.max(-360, dtheta))
     end
 
-    if counterclockwise ~= (dtheta > 0) then
+    if counterclockwise ~= (dtheta < 0) then
         dtheta = -dtheta
         startAngle = endAngle
     end
