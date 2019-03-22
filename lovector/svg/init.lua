@@ -30,7 +30,7 @@ local DEFAULT_OPTIONS = {
     ["arc_segments"] = 50;
     ["bezier_depth"] = 5;
     ["debug"] = true;
-    ["stroke_debug"] = false;
+    ["path_debug"] = false;
     ["use_love_fill"] = false;
 }
 
