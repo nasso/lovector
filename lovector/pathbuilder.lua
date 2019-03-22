@@ -163,12 +163,13 @@ function PathBuilder:lineTo(x, y)
     end
 end
 
-
 function PathBuilder:quadraticCurveTo(cpx, cpy, x, y)
     self:ensureSubPath(cpx, cpy)
 
+    local spx, spy = self:lastPoint()
+
     -- generate vertices
-    local curve = love.math.newBezierCurve(self:lastPoint(), x, y)
+    local curve = love.math.newBezierCurve(spx, spy, x, y)
     curve:insertControlPoint(cpx, cpy)
 
     local verts = curve:render(self.options["bezier_depth"])
@@ -188,8 +189,10 @@ end
 function PathBuilder:bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
     self:ensureSubPath(cp1x, cp1y)
 
+    local spx, spy = self:lastPoint()
+
     -- generate vertices
-    local curve = love.math.newBezierCurve(self:lastPoint(), x, y)
+    local curve = love.math.newBezierCurve(spx, spy, x, y)
     curve:insertControlPoint(cp1x, cp1y)
     curve:insertControlPoint(cp2x, cp2y)
 
