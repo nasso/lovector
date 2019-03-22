@@ -47,6 +47,10 @@ local ELEMENTS = {
 
 local common = {}
 
+function common.get_attr(element, attrname, default)
+    return element:getAttribute(attrname, INHERIT[attrname], default)
+end
+
 function common.transformparse(svg, transform)
     local result = ""
 
@@ -135,145 +139,54 @@ function common.transformparse(svg, transform)
     return result
 end
 
-function common.vecangle(ux, uy, vx, vy)
-    local cross = ux * vy - uy * vx
-    local dot = ux * vx + uy * vy
-
-    -- clamp it to avoid floating-point arithmetics errors
-    dot = math.min(1, math.max(-1, dot))
-
-    local result = math.deg(math.acos(dot))
-
-    if cross >= 0 then
-        return result
-    else
-        return -result
-    end
-end
-
-function common.endpoint2center(x1, y1, x2, y2, fa, fs, rx, ry, phi)
-    -- Pre-compute some stuff
-    local rad_phi = math.rad(phi)
-    local cos_phi = math.cos(rad_phi)
-    local sin_phi = math.sin(rad_phi)
-
-    -- Step 1: Compute (x1_, y1_)
-    local x1_ = cos_phi * (x1-x2)/2 + sin_phi * (y1-y2)/2
-    local y1_ = -sin_phi * (x1-x2)/2 + cos_phi * (y1-y2)/2
-
-    -- Step 2: Compute (cx_, cy_)
-    local f = math.sqrt(
-        math.max(rx*rx * ry*ry - rx*rx * y1_*y1_ - ry*ry * x1_*x1_, 0) -- rounding errors safety
-        /
-        (rx*rx * y1_*y1_ + ry*ry * x1_*x1_)
-    )
-
-    if fa == fs then
-        f = -f
+function common.remove_doubles(vertices, epsilon)
+    if #vertices < 2 or #vertices % 2 ~= 0 then
+        error("the vertex array must have length greater or equal than 2, and be even")
+        return nil
     end
 
-    local cx_ =  f * rx * y1_ / ry
-    local cy_ = -f * ry * x1_ / rx
+    -- default epsilon to 0
+    epsilon = epsilon or 0
 
-    -- Step 3: Compute (cx, cy) from (cx_, cy_)
-    local cx = cos_phi * cx_ - sin_phi * cy_ + (x1+x2)/2
-    local cy = sin_phi * cx_ + cos_phi * cy_ + (y1+y2)/2
+    -- where we're going to store vertices
+    local clean_vertices = {}
 
-    -- Step 4: Compute theta1 and dtheta
-    local vx = (x1_-cx_)/rx
-    local vy = (y1_-cy_)/ry
+    -- add at least 1
+    table.insert(clean_vertices, vertices[1])
+    table.insert(clean_vertices, vertices[2])
 
-    local theta1 = common.vecangle(1, 0, vx, vy)
-    local dtheta = common.vecangle(vx, vy, (-x1_-cx_)/rx, (-y1_-cy_)/ry) % 360
-
-    if not fs and dtheta > 0 then
-        dtheta = dtheta - 360
-    elseif fs and dtheta < 0 then
-        dtheta = dtheta + 360
+    -- add all the others
+    for i = 3, #vertices, 2 do
+        if
+            math.abs(vertices[i] - vertices[i - 2]) > epsilon or
+            math.abs(vertices[i + 1] - vertices[i - 1]) > epsilon
+        then
+            table.insert(clean_vertices, vertices[i])
+            table.insert(clean_vertices, vertices[i + 1])
+        end
     end
 
-    return cx, cy, theta1, dtheta
-end
-
-function common.buildarc(sx, sy, rx, ry, phi, fa, fs, ex, ey, segments, vertices)
-    -- Argument checking
-    if segments == nil then
-        segments = 10
-    end
-
-    segments = math.max(segments, 1)
-
-    if vertices == nil then
-        vertices = {}
-    end
-
-    -- Out-of-range checks
-
-    -- - That's stupid
-    if sx == ex and sy == ey then
-        return vertices
-    end
-
-    -- - That's just a line!
-    if rx == 0 or ry == 0 then
-        table.insert(vertices, ex)
-        table.insert(vertices, ey)
-    end
-
-    -- - Negatives are a lie!
-    rx = math.abs(rx)
-    ry = math.abs(ry)
-
-    -- - When your radii are too small
-    local rad_phi = math.rad(phi)
-    local cos_phi = math.cos(rad_phi)
-    local sin_phi = math.sin(rad_phi)
-
-    local x1_ = cos_phi * (sx-ex)/2 + sin_phi * (sy-ey)/2
-    local y1_ = -sin_phi * (sx-ex)/2 + cos_phi * (sy-ey)/2
-
-    local lambda = x1_*x1_/(rx*rx) + y1_*y1_/(ry*ry)
-
-    if lambda > 1 then
-        local sqrt_lambda = math.sqrt(lambda)
-
-        rx = sqrt_lambda * rx
-        ry = sqrt_lambda * ry
-    end
-
-    -- - When you go too far:
-    phi = phi % 360
-
-    -- - Bang bang, you're a boolean
-    fa = fa ~= 0
-    fs = fs ~= 0
-
-    local cx, cy, theta1, dtheta = common.endpoint2center(sx, sy, ex, ey, fa, fs, rx, ry, phi)
-
-    for i = 1, segments do
-        local theta = math.rad(theta1 + dtheta * (i / segments))
-        local cos_theta = math.cos(theta)
-        local sin_theta = math.sin(theta)
-
-        table.insert(vertices, cos_phi * rx * cos_theta - sin_phi * ry * sin_theta + cx)
-        table.insert(vertices, sin_phi * rx * cos_theta + cos_phi * ry * sin_theta + cy)
-    end
-
-    return vertices
-end
-
-function common.get_attr(element, attrname, default)
-    return element:getAttribute(attrname, INHERIT[attrname], default)
+    -- return the array
+    return clean_vertices
 end
 
 function common.gensubpath(svg, element, vertices, closed, options)
-    local vertexcount = #vertices
-
-    if vertexcount < 4 then
+    -- not enough vertices
+    if #vertices < 4 then
         return ""
     end
 
-    table.insert((svg.extdata), vertices)
+    -- remove doubles
+    vertices = common.remove_doubles(vertices, 1 / 1000)
+
+    -- check vertice count again because it might have changed
+    if #vertices < 4 then
+        return ""
+    end
+
+    -- add the new, clean vertex buffer to the data
+    table.insert(svg.extdata, vertices)
+
     local bufferid = #svg.extdata
 
     -- attributes!
@@ -282,16 +195,12 @@ function common.gensubpath(svg, element, vertices, closed, options)
     local f_red, f_green, f_blue, f_alpha = colorparse(common.get_attr(element, "fill", "black"))
     local s_red, s_green, s_blue, s_alpha = colorparse(common.get_attr(element, "stroke", "none"))
 
-    --  opacity
+    -- opacity
     local opacity = tonumber(common.get_attr(element, "opacity", "1"), 10)
-
-    --  fill-opacity
     local f_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"), 10)
-
-    --  stroke-opacity
     local s_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"), 10)
 
-    -- stroke
+    -- line width
     local linewidth = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
 
     -- check if we're even going to draw anything
@@ -302,7 +211,7 @@ function common.gensubpath(svg, element, vertices, closed, options)
     local result = ""
 
     -- fill
-    if f_red ~= nil and vertexcount >= 6 then
+    if f_red ~= nil and #vertices >= 6 then
         if options.use_love_fill == true then
             result = result ..
                 "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
@@ -310,7 +219,7 @@ function common.gensubpath(svg, element, vertices, closed, options)
         else
             local minx, miny, maxx, maxy = vertices[1], vertices[2], vertices[1], vertices[2]
 
-            for i = 3, vertexcount, 2 do
+            for i = 3, #vertices, 2 do
                 minx = math.min(minx, vertices[i])
                 miny = math.min(miny, vertices[i+1])
                 maxx = math.max(maxx, vertices[i])
@@ -334,7 +243,7 @@ function common.gensubpath(svg, element, vertices, closed, options)
     end
 
     -- stroke
-    if s_red ~= nil and vertexcount >= 4 then
+    if s_red ~= nil and #vertices >= 4 then
         result = result .. "love.graphics.setColor(" .. s_red .. ", " .. s_green .. ", " .. s_blue .. ", " .. (s_alpha * s_opacity * opacity) .. ")\n"
         result = result .. "love.graphics.setLineWidth(" .. linewidth .. ")\n"
 
@@ -343,9 +252,29 @@ function common.gensubpath(svg, element, vertices, closed, options)
         else
             result = result .. "love.graphics.line(extdata[" .. bufferid .. "])\n"
         end
+
+        local r,g,b = common.HSL(math.random(), 1, .5)
+        result = result .. "love.graphics.setColor(" .. r .. ", " .. g .. ", " .. b .. ",.5)\n"
+        result = result .. "love.graphics.setPointSize(5)\n"
+        result = result .. "love.graphics.points(extdata[" .. bufferid .. "])\n"
     end
 
     return result
+end
+
+function common.HSL(h, s, l, a)
+    if s<=0 then return l,l,l,a end
+    h, s, l = h*6, s, l
+    local c = (1-math.abs(2*l-1))*s
+    local x = (1-math.abs(h%2-1))*c
+    local m,r,g,b = (l-.5*c), 0,0,0
+    if h < 1     then r,g,b = c,x,0
+    elseif h < 2 then r,g,b = x,c,0
+    elseif h < 3 then r,g,b = 0,c,x
+    elseif h < 4 then r,g,b = 0,x,c
+    elseif h < 5 then r,g,b = x,0,c
+    else              r,g,b = c,0,x
+    end return (r+m),(g+m),(b+m),a
 end
 
 function common.gen(svg, element, options)

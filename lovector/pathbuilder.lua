@@ -174,16 +174,13 @@ function PathBuilder:quadraticCurveTo(cpx, cpy, x, y)
 
     local verts = curve:render(self.options["bezier_depth"])
 
-    for i = 1, #verts do
+    -- don't include the first point as it is just the last one
+    for i = 3, #verts do
         table.insert(self.current_subpath.vertices, verts[i])
     end
 
     -- release object
     curve:release()
-
-    -- insert final point
-    table.insert(self.current_subpath.vertices, x)
-    table.insert(self.current_subpath.vertices, y)
 end
 
 function PathBuilder:bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
@@ -198,16 +195,13 @@ function PathBuilder:bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
 
     local verts = curve:render(self.options["bezier_depth"])
 
-    for i = 1, #verts do
+    -- don't include the first point as it is just the last one
+    for i = 3, #verts do
         table.insert(self.current_subpath.vertices, verts[i])
     end
 
     -- release object
     curve:release()
-
-    -- insert final point
-    table.insert(self.current_subpath.vertices, x)
-    table.insert(self.current_subpath.vertices, y)
 end
 
 function PathBuilder:ellipticalArcTo(rx, ry, phi, fa, fs, x, y)
