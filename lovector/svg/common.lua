@@ -468,6 +468,18 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     return result
 end
 
+function common.gen_path(svg, element, path, options)
+    local result = ""
+
+    for i = 1, #(path.subpaths) do
+        local sub = path.subpaths[i]
+
+        result = result .. common.gen_subpath(svg, element, sub.vertices, sub.closed, options)
+    end
+
+    return result
+end
+
 function common.HSL(h, s, l, a)
     if s<=0 then return l,l,l,a end
     h, s, l = h*6, s, l

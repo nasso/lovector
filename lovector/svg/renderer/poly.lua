@@ -49,8 +49,7 @@ function renderer:empty(svg, options)
 
     local result = ""
 
-    result = result ..
-    common.gen_subpath(
+    result = result .. common.gen_subpath(
         svg,
         self,
         vertices,

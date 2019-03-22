@@ -41,15 +41,7 @@ function renderer:empty(svg, options)
 
     path:arc(cx, cy, r, 0, 360)
 
-    local result = ""
-
-    for i = 1, #(path.subpaths) do
-        local sub = path.subpaths[i]
-
-        result = result .. common.gen_subpath(svg, self, sub.vertices, sub.closed, options)
-    end
-
-    return result
+    return common.gen_path(svg, self, path, options)
 end
 
 return renderer

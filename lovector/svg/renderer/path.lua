@@ -303,13 +303,7 @@ function renderer:empty(svg, options)
     end
 
     -- render everything!
-    local result = ""
-
-    for i = 1, #(path.subpaths) do
-        local sub = path.subpaths[i]
-
-        result = result .. common.gen_subpath(svg, self, sub.vertices, sub.closed, options)
-    end
+    local result = common.gen_path(svg, self, path, options)
 
     -- don't forget to eventually transform it
     if common.get_attr(self, "transform") ~= nil then

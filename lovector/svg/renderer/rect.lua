@@ -73,15 +73,7 @@ function renderer:empty(svg, options)
     path:lineTo(x, y + ry)
     path:ellipticalArcTo(rx, ry, 0, false, true, x + rx, y)
 
-    local result = ""
-
-    for i = 1, #(path.subpaths) do
-        local sub = path.subpaths[i]
-
-        result = result .. common.gen_subpath(svg, self, sub.vertices, sub.closed, options)
-    end
-
-    return result
+    return common.gen_path(svg, self, path, options)
 end
 
 return renderer
