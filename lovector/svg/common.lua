@@ -176,8 +176,6 @@ local COLOR_NAMES = {
 }
 
 local INHERIT = {
-    ["x"] = true;
-    ["y"] = true;
     ["color"] = true;
     ["fill"] = true;
     ["fill-opacity"] = true;
