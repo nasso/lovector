@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- This file contains code from the MDN -->
-<svg viewBox="0 0 40 50" width="400" height="500" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 50 50" width="500" height="500" xmlns="http://www.w3.org/2000/svg">
     <g transform="scale(0.1 0.1)">
         <g transform="translate(0 0)">
             <!-- MoveTo and horizontal LineTo -->
@@ -16,15 +16,6 @@
                    m-20,10 h 10
                    m-20,10 h 10
                    m-20,10 h 10" />
-        </g>
-
-        <g transform="translate(200 0)">
-            <path fill="none" stroke="red"
-                  d="M 10,30
-                     A 20,20 0,0,1 50,30
-                     A 20,20 0,0,1 90,30
-                     Q 90,60 50,90
-                     Q 10,60 10,30 z" />
         </g>
 
         <g transform="translate(150 50)">
@@ -146,6 +137,15 @@
             -->
             <polygon fill-rule="evenodd" stroke="red"
                      points="50,0 21,90 98,35 02,35 79,90"/>
+        </g>
+
+        <g transform="translate(250 0)">
+            <path fill="none" stroke="red"
+                  d="M 10,30
+                     A 20,20 0,0,1 50,30
+                     A 20,20 0,0,1 90,30
+                     Q 90,60 50,90
+                     Q 10,60 10,30 z" />
         </g>
 
         <g transform="translate(0 400)">
