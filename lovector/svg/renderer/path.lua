@@ -23,6 +23,7 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
+local PathBuilder = require(cwd .. "pathbuilder")
 local common = require(cwd .. "svg.common")
 
 local renderer = {}
@@ -36,15 +37,10 @@ function renderer:empty(svg, options)
     end
 
     -- output
-    local result = ""
+    local path = PathBuilder(options)
 
-    local ipx = 0
-    local ipy = 0
-    local cpx = 0
-    local cpy = 0
     local prev_ctrlx = 0
     local prev_ctrly = 0
-    local vertices = {}
 
     -- iterate through all dem commands
     for op, strargs in string.gmatch(pathdef, "%s*([MmLlHhVvCcSsQqTtAaZz])%s*([^MmLlHhVvCcSsQqTtAaZz]*)%s*") do
@@ -59,100 +55,62 @@ function renderer:empty(svg, options)
 
         -- move to
         if op == "M" then
-            result = result .. common.gensubpath(svg, self, vertices, false, options)
-            vertices = {}
-
-            ipx = table.remove(args)
-            ipy = table.remove(args)
-            cpx = ipx
-            cpy = ipy
-
-            table.insert(vertices, cpx)
-            table.insert(vertices, cpy)
-
             while #args >= 2 do
-                cpx = table.remove(args)
-                cpy = table.remove(args)
-
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:moveTo(table.remove(args), table.remove(args))
             end
 
         -- move to (relative)
         elseif op == "m" then
-            result = result .. common.gensubpath(svg, self, vertices, false, options)
-            vertices = {}
-
-            ipx = cpx + table.remove(args)
-            ipy = cpy + table.remove(args)
-            cpx = ipx
-            cpy = ipy
-
-            table.insert(vertices, cpx)
-            table.insert(vertices, cpy)
-
             while #args >= 2 do
-                cpx = cpx + table.remove(args)
-                cpy = cpy + table.remove(args)
+                local cpx, cpy = path:lastPoint()
 
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:moveTo(cpx + table.remove(args), cpy + table.remove(args))
             end
 
         -- line to
         elseif op == "L" then
             while #args >= 2 do
-                cpx = table.remove(args)
-                cpy = table.remove(args)
-
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:lineTo(table.remove(args), table.remove(args))
             end
 
         -- line to (relative)
         elseif op == "l" then
             while #args >= 2 do
-                cpx = cpx + table.remove(args)
-                cpy = cpy + table.remove(args)
+                local cpx, cpy = path:lastPoint()
 
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:lineTo(cpx + table.remove(args), cpy + table.remove(args))
             end
 
         -- line to (horizontal)
         elseif op == "H" then
             while #args >= 1 do
-                cpx = table.remove(args)
+                local _, cpy = path:lastPoint()
 
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:lineTo(table.remove(args), cpy)
             end
 
         -- line to (horizontal, relative)
         elseif op == "h" then
             while #args >= 1 do
-                cpx = cpx + table.remove(args)
+                local cpx, cpy = path:lastPoint()
 
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:lineTo(cpx + table.remove(args), cpy)
             end
 
         -- line to (vertical)
         elseif op == "V" then
             while #args >= 1 do
-                cpy = table.remove(args)
+                local cpx = path:lastPoint()
 
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:lineTo(cpx, table.remove(args))
             end
 
         -- line to (vertical, relative)
         elseif op == "v" then
             while #args >= 1 do
-                cpy = cpy + table.remove(args)
+                local cpx, cpy = path:lastPoint()
 
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:lineTo(cpx, cpy + table.remove(args))
             end
 
         -- cubic bezier curve
@@ -165,21 +123,7 @@ function renderer:empty(svg, options)
                 local x = table.remove(args)
                 local y = table.remove(args)
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-                curve:insertControlPoint(x2, y2)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:bezierCurveTo(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -189,6 +133,8 @@ function renderer:empty(svg, options)
         -- cubic bezier curve (relative)
         elseif op == "c" then
             while #args >= 6 do
+                local cpx, cpy = path:lastPoint()
+
                 local x1 = cpx + table.remove(args)
                 local y1 = cpy + table.remove(args)
                 local x2 = cpx + table.remove(args)
@@ -196,21 +142,7 @@ function renderer:empty(svg, options)
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-                curve:insertControlPoint(x2, y2)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:bezierCurveTo(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -220,6 +152,8 @@ function renderer:empty(svg, options)
         -- smooth cubic Bézier curve
         elseif op == "S" then
             while #args >= 4 do
+                local cpx, cpy = path:lastPoint()
+
                 local x2 = table.remove(args)
                 local y2 = table.remove(args)
                 local x = table.remove(args)
@@ -229,21 +163,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-                curve:insertControlPoint(x2, y2)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:bezierCurveTo(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -253,6 +173,8 @@ function renderer:empty(svg, options)
         -- smooth cubic Bézier curve (relative)
         elseif op == "s" then
             while #args >= 4 do
+                local cpx, cpy = path:lastPoint()
+
                 local x2 = cpx + table.remove(args)
                 local y2 = cpy + table.remove(args)
                 local x = cpx + table.remove(args)
@@ -262,21 +184,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-                curve:insertControlPoint(x2, y2)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:bezierCurveTo(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -291,20 +199,7 @@ function renderer:empty(svg, options)
                 local x = table.remove(args)
                 local y = table.remove(args)
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:quadraticCurveTo(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -314,25 +209,14 @@ function renderer:empty(svg, options)
         -- quadratic Bézier curve (relative)
         elseif op == "q" then
             while #args >= 4 do
+                local cpx, cpy = path:lastPoint()
+
                 local x1 = cpx + table.remove(args)
                 local y1 = cpy + table.remove(args)
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:quadraticCurveTo(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -342,6 +226,8 @@ function renderer:empty(svg, options)
         -- smooth quadratic Bézier curve
         elseif op == "T" then
             while #args >= 2 do
+                local cpx, cpy = path:lastPoint()
+
                 local x = table.remove(args)
                 local y = table.remove(args)
 
@@ -349,20 +235,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:quadraticCurveTo(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -372,6 +245,8 @@ function renderer:empty(svg, options)
         -- smooth quadratic Bézier curve (relative)
         elseif op == "t" then
             while #args >= 2 do
+                local cpx, cpy = path:lastPoint()
+
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
@@ -379,20 +254,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                -- generate vertices
-                local curve = love.math.newBezierCurve(cpx, cpy, x, y)
-                curve:insertControlPoint(x1, y1)
-
-                for _, v in ipairs(curve:render(options["bezier_depth"])) do
-                    table.insert(vertices, v)
-                end
-
-                -- release object
-                curve:release()
-
-                -- move the current point
-                cpx = x
-                cpy = y
+                path:quadraticCurveTo(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -410,18 +272,14 @@ function renderer:empty(svg, options)
                 local x = table.remove(args)
                 local y = table.remove(args)
 
-                common.buildarc(cpx, cpy, rx, ry, angle, large_arc_flag, sweep_flag, x, y, options["arc_segments"], vertices)
-
-                cpx = x
-                cpy = y
-
-                table.insert(vertices, cpx)
-                table.insert(vertices, cpy)
+                path:ellipticalArcTo(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
             end
 
         -- arc to (relative)
         elseif op == "a" then
             while #args >= 7 do
+                local cpx, cpy = path:lastPoint()
+
                 local rx = table.remove(args)
                 local ry = table.remove(args)
                 local angle = table.remove(args)
@@ -430,33 +288,30 @@ function renderer:empty(svg, options)
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
-                common.buildarc(cpx, cpy, rx, ry, angle, large_arc_flag, sweep_flag, x, y, options["arc_segments"], vertices)
-
-                cpx = x
-                cpy = y
+                path:ellipticalArcTo(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
             end
 
         -- close shape (relative and absolute are the same)
         elseif op == "Z" or op == "z" then
-            result = result .. common.gensubpath(svg, self, vertices, true, options)
-
-            cpx = ipx
-            cpy = ipy
-
-            table.insert(vertices, cpx)
-            table.insert(vertices, cpy)
+            path:closePath()
         end
 
         -- if the command wasn't a curve command, set prev_ctrlx and prev_ctrly to cpx and cpy
         if not string.match(op, "[CcSsQqTt]") then
-            prev_ctrlx = cpx
-            prev_ctrly = cpy
+            prev_ctrlx, prev_ctrly = path:lastPoint()
         end
     end
 
-    -- one last time~!
-    result = result .. common.gensubpath(svg, self, vertices, false, options)
+    -- render everything!
+    local result = ""
 
+    for i = 1, #(path.subpaths) do
+        local sub = path.subpaths[i]
+
+        result = result .. common.gensubpath(svg, self, sub.vertices, sub.closed, options)
+    end
+
+    -- don't forget to eventually transform it
     if common.get_attr(self, "transform") ~= nil then
         result =
             "love.graphics.push()\n" ..
