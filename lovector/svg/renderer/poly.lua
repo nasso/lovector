@@ -22,13 +22,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-return {
-    ["polygon"] = "poly";
-    ["polyline"] = "poly";
-    ["ellipse"] = "ellipse";
-    ["circle"] = "circle";
-    ["g"] = "g";
-    ["path"] = "path";
-    ["rect"] = "rect";
-    ["svg"] = "svg";
-}
+local cwd = (...):match('(.*lovector).-$') .. "."
+local common = require(cwd .. "svg.common")
+
+local renderer = {}
+
+function renderer:empty(svg, options)
+    local points = common.get_attr(self, "points")
+
+    if points == nil then
+        return ""
+    end
+
+    -- vertice lists
+    local vertices = {}
+
+    -- get all the coordinates
+    for n in points:gmatch("[%-%+]?[^%s,%-%+]+") do
+        table.insert(vertices, n)
+    end
+
+    -- there must be an even number of coordinates
+    if #vertices % 2 ~= 0 then
+        return ""
+    end
+
+    local result = ""
+
+    result = result ..
+    common.gen_subpath(
+        svg,
+        self,
+        vertices,
+        self.name == "polygon", -- closed if it's a polygon
+        options
+    )
+
+    return result
+end
+
+return renderer
