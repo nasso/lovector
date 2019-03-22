@@ -210,10 +210,6 @@ function PathBuilder:ellipticalArcTo(rx, ry, phi, fa, fs, x, y)
     local sx, sy = self:lastPoint()
 
     -- argument checking
-    if segments == nil then
-        segments = 10
-    end
-
     local segments = math.max(self.options["arc_segments"], 1)
 
     -- out-of-range checks
