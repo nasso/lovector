@@ -135,7 +135,7 @@
         <g transform="translate(200 100)">
             <!-- Using g to inherit presentation attributes -->
             <g fill="white" stroke="green" stroke-width="5">
-                <circle cx="40" cy="40" r="25" />
+                <ellipse cx="40" cy="40" rx="25" ry="50" />
                 <circle cx="60" cy="60" r="25" />
             </g>
         </g>

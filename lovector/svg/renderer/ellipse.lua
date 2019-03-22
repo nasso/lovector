@@ -22,11 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-return {
-    ["ellipse"] = "ellipse";
-    ["circle"] = "circle";
-    ["g"] = "g";
-    ["path"] = "path";
-    ["rect"] = "rect";
-    ["svg"] = "svg";
-}
+local cwd = (...):match('(.*lovector).-$') .. "."
+local PathBuilder = require(cwd .. "pathbuilder")
+local common = require(cwd .. "svg.common")
+
+local renderer = {}
+
+function renderer:empty(svg, options)
+    local cx = tonumber(common.get_attr(self, "cx", "0"), 10)
+    local cy = tonumber(common.get_attr(self, "cy", "0"), 10)
+    local rx = tonumber(common.get_attr(self, "rx", "0"), 10)
+    local ry = tonumber(common.get_attr(self, "ry", "0"), 10)
+
+    if rx <= 0 or ry <= 0 then
+        return ""
+    end
+
+    local path = PathBuilder(options)
+
+    path:ellipticalArc(cx, cy, rx, ry, 0, 360)
+
+    local result = ""
+
+    for i = 1, #(path.subpaths) do
+        local sub = path.subpaths[i]
+
+        result = result .. common.gen_subpath(svg, self, sub.vertices, sub.closed, options)
+    end
+
+    return result
+end
+
+return renderer
