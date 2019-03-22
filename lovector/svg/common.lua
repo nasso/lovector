@@ -23,6 +23,7 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
+local ELEMENTS = require(cwd .. "svg.renderer")
 
 local NAMES = {
     ["aliceblue"] = {240,248,255,255};
@@ -185,13 +186,6 @@ local INHERIT = {
     ["stroke"] = true;
     ["stroke-opacity"] = true;
     ["stroke-width"] = true;
-}
-
-local ELEMENTS = {
-    ["g"] = "g";
-    ["path"] = "path";
-    ["rect"] = "rect";
-    ["svg"] = "svg";
 }
 
 local common = {}
