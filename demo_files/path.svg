@@ -19,12 +19,12 @@
         </g>
 
         <g transform="translate(200 0)">
-              <path fill="none" stroke="red"
-                    d="M 10,30
-                       A 20,20 0,0,1 50,30
-                       A 20,20 0,0,1 90,30
-                       Q 90,60 50,90
-                       Q 10,60 10,30 z" />
+            <path fill="none" stroke="red"
+                  d="M 10,30
+                     A 20,20 0,0,1 50,30
+                     A 20,20 0,0,1 90,30
+                     Q 90,60 50,90
+                     Q 10,60 10,30 z" />
         </g>
 
         <g transform="translate(150 50)">

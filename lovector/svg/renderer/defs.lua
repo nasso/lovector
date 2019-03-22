@@ -22,16 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-return {
-    ["circle"] = "circle";
-    ["defs"] = "defs";
-    ["ellipse"] = "ellipse";
-    ["g"] = "";
-    ["line"] = "line";
-    ["path"] = "path";
-    ["polygon"] = "poly";
-    ["polyline"] = "poly";
-    ["rect"] = "rect";
-    ["svg"] = "svg";
-    ["use"] = "use";
-}
+local renderer = {}
+
+function renderer:open(svg, options)
+    return "", nil, false
+end
+
+return renderer

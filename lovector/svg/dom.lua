@@ -196,12 +196,21 @@ DOM.Element.mt.__index = DOM.Element.mt
 setmetatable(DOM.Element, DOM.Element.mt)
 
 function DOM.Element.mt.__call(_, name, attributes, children)
-    return setmetatable({
+    local self = setmetatable({
         parent = nil;
         name = name;
         attributes = attributes;
         children = children;
     }, DOM.Element)
+
+    -- set ourselves as the parent of our children
+    if children ~= nil then
+        for i = 1, #children do
+            children[i].parent = self
+        end
+    end
+
+    return self
 end
 
 function DOM.Element:insertChild(i, element)
@@ -212,12 +221,33 @@ function DOM.Element:insertChild(i, element)
     table.insert(self.children, i, element)
 end
 
+function DOM.Element:removeChild(element)
+    if self.children == nil then
+        return
+    end
+
+    for i = 1, #(self.children) do
+        local child = self.children[i]
+
+        if child == element then
+            table.remove(self.children, i)
+            child.parent = nil
+            return
+        end
+    end
+end
+
 function DOM.Element:appendChild(element)
     if self.children == nil then
         self.children = {}
     end
 
+    if element.parent ~= nil then
+        element.parent:removeChild(element)
+    end
+
     table.insert(self.children, element)
+    element.parent = self
 end
 
 function DOM.Element:getAttribute(name, inherit, default)
