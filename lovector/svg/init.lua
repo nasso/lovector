@@ -23,7 +23,7 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
-local DOM = require(cwd .. "dom")
+local DOM = require(cwd .. "svg.dom")
 local common = require(cwd .. "svg.common")
 
 local DEFAULT_OPTIONS = {

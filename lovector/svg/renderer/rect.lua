@@ -78,7 +78,7 @@ function renderer:empty(svg, options)
     for i = 1, #(path.subpaths) do
         local sub = path.subpaths[i]
 
-        result = result .. common.gensubpath(svg, self, sub.vertices, sub.closed, options)
+        result = result .. common.gen_subpath(svg, self, sub.vertices, sub.closed, options)
     end
 
     return result

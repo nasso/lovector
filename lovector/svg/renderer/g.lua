@@ -38,7 +38,7 @@ function renderer:open(svg, options)
 
         result = result ..
             "love.graphics.push()\n" ..
-            common.transformparse(svg, transform)
+            common.transform_parse(svg, transform)
     end
 
     return result, gpush
