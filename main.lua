@@ -38,10 +38,11 @@ local pics = {}
 
 function love.load()
 	love.window.setMode(1280, 960, {
+		minheight = 30;
+		minwidth = 400;
+		msaa = 4;
 		resizable = true;
 		vsync = false;
-		minwidth = 400;
-		minheight = 30;
 	})
 
 	love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
