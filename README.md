@@ -96,7 +96,7 @@ follow these coding style guidelines as much as possible:
     words.
 * Constants must be in `ALL_CAPS_WITH_UNDERSCORES`.
 * Avoid inlining [blocks][1], [control structures][2], [for statements][3] and
-    [function definitions][4].
+    [function definitions][4], unless it makes the code more clear.
 * Never have a space character before a `,`.
 * Always have a space character after a `,`.
 * Always have a space character before and after `=`, `+` and `-`.
