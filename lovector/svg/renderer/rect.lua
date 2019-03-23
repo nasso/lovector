@@ -65,13 +65,30 @@ function renderer:empty(svg, options)
 
     path:move_to(x + rx, y)
     path:line_to(x + width - rx, y)
-    path:elliptical_arc_to(rx, ry, 0, false, true, x + width, y + ry)
+
+    if rx ~= 0 and ry ~= 0 then
+        path:elliptical_arc_to(rx, ry, 0, false, true, x + width, y + ry)
+    end
+
     path:line_to(x + width, y + height - ry)
-    path:elliptical_arc_to(rx, ry, 0, false, true, x + width - rx, y + height)
+
+    if rx ~= 0 and ry ~= 0 then
+        path:elliptical_arc_to(rx, ry, 0, false, true, x + width - rx, y + height)
+    end
+
     path:line_to(x + rx, y + height)
-    path:elliptical_arc_to(rx, ry, 0, false, true, x, y + height - ry)
+
+    if rx ~= 0 and ry ~= 0 then
+        path:elliptical_arc_to(rx, ry, 0, false, true, x, y + height - ry)
+    end
+
     path:line_to(x, y + ry)
-    path:elliptical_arc_to(rx, ry, 0, false, true, x + rx, y)
+
+    if rx ~= 0 and ry ~= 0 then
+        path:elliptical_arc_to(rx, ry, 0, false, true, x + rx, y)
+    end
+
+    path:close_to()
 
     return common.gen_path(svg, self, path, options)
 end
