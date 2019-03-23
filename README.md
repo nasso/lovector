@@ -76,7 +76,7 @@ Here's a summary table of what lövector does and doesn't support for now:
 
 ## Contributing
 
-Feel free to fork, hack, make changes and merge requests! Though, try to follow
+Feel free to fork, hack, make changes and merge/pull requests! Though, try to follow
 these coding style guidelines as much as possible:
 
 * Indent with 4 spaces.
