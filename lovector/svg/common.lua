@@ -368,6 +368,12 @@ function common.transform_parse(svg, transform)
     return result
 end
 
+function common.euclidian_distance_squared(x1, y1, x2, y2)
+    local dx = x2 - x1
+    local dy = y2 - y1
+    return dx * dx + dy * dy
+end
+
 function common.remove_doubles(vertices, epsilon)
     if #vertices < 2 or #vertices % 2 ~= 0 then
         error("the vertex array must have length greater or equal than 2, and be even")
@@ -376,6 +382,9 @@ function common.remove_doubles(vertices, epsilon)
 
     -- default epsilon to 0
     epsilon = epsilon or 0
+
+    -- square epsilon so that we don't have to take the sqrt of distances
+    epsilon = epsilon * epsilon
 
     -- where we're going to store vertices
     local clean_vertices = {}
@@ -387,8 +396,21 @@ function common.remove_doubles(vertices, epsilon)
     -- add all the others
     for i = 3, #vertices, 2 do
         if
-            math.abs(vertices[i] - vertices[i - 2]) > epsilon or
-            math.abs(vertices[i + 1] - vertices[i - 1]) > epsilon
+            -- check distance between this point and the previous one
+            common.euclidian_distance_squared(
+                vertices[i], vertices[i + 1],
+                vertices[i - 2], vertices[i - 1]
+            ) > epsilon
+
+            and
+
+            -- check distance between last and first points
+            ((i ~= #vertices - 1) or
+                common.euclidian_distance_squared(
+                    vertices[i], vertices[i + 1],
+                    vertices[1], vertices[2]
+                ) > epsilon
+            )
         then
             table.insert(clean_vertices, vertices[i])
             table.insert(clean_vertices, vertices[i + 1])
