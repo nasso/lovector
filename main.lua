@@ -96,7 +96,6 @@ function love.draw()
 	love.graphics.translate(-w/2, -h/2)
 	love.graphics.translate(-cameraX, -cameraY)
 
-	-- draw any scheduled SVGs
 	pics[1]:draw(0, 0, 10)
 	pics[2]:draw(550, 100, 0.5)
 
