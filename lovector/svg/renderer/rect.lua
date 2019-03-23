@@ -88,7 +88,7 @@ function renderer:empty(svg, options)
         path:elliptical_arc_to(rx, ry, 0, false, true, x + rx, y)
     end
 
-    path:close_to()
+    path:close_path()
 
     return common.gen_path(svg, self, path, options)
 end
