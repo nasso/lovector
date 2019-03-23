@@ -76,8 +76,13 @@ Here's a summary table of what lövector does and doesn't support for now:
 
 ## Contributing
 
-Feel free to fork, hack, make changes and merge/pull requests! Though, try to follow
-these coding style guidelines as much as possible:
+Feel free to fork, hack, make changes and merge/pull requests! Though, try to
+follow these coding style guidelines as much as possible:
+
+### All languages
+
+***As a rule of thumb, try to keep the coding style consistent with what's
+    already there!***
 
 * Indent with 4 spaces.
 * Always have a trailing newline at the end of every file.
@@ -90,6 +95,8 @@ these coding style guidelines as much as possible:
 * Modules must have a `shortname`, `onlylowercase` and with nothing between
     words.
 * Constants must be in `ALL_CAPS_WITH_UNDERSCORES`.
+* Avoid inlining [blocks][1], [control structures][2], [for statements][3] and
+    [function definitions][4].
 * Never have a space character before a `,`.
 * Always have a space character after a `,`.
 * Always have a space character before and after `=`, `+` and `-`.
@@ -97,11 +104,14 @@ these coding style guidelines as much as possible:
     they're part of a mathematic expression where they have an implicit higher
     precedence than other operators. Example: `a*b + c*d`, `a * b + c * d`,
     `a * b + c*d` are okay, but `a*b * c` isn't.
-* Refer to [the Lua style guidelines](http://lua-users.org/wiki/LuaStyleGuide)
+* Refer to [the Lua style guidelines][5]
     for everything else.
 
-***As a rule of thumb, try to keep the coding style consistent with what's
-    already there!***
+[1]: https://www.lua.org/manual/5.1/manual.html#2.4.2
+[2]: https://www.lua.org/manual/5.1/manual.html#2.4.4
+[3]: https://www.lua.org/manual/5.1/manual.html#2.4.5
+[4]: https://www.lua.org/manual/5.1/manual.html#2.5.9
+[5]: http://lua-users.org/wiki/LuaStyleGuide
 
 ### Markdown coding style
 
