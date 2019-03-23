@@ -93,9 +93,10 @@ these coding style guidelines as much as possible:
 * Never have a space character before a `,`.
 * Always have a space character after a `,`.
 * Always have a space character before and after `=`, `+` and `-`.
-* Don't have a space character before and after `*` and `/` if they're part of
-    a mathematic expression where they have an implicit higher precedence than
-    other operators. Example: `a*b + c`, `(a * b) + c`, `a * b` are okay.
+* Having a space character before and after `*` and `/` isn't mandatory if
+    they're part of a mathematic expression where they have an implicit higher
+    precedence than other operators. Example: `a*b + c*d`, `a * b + c * d`,
+    `a * b + c*d` are okay, but `a*b * c` isn't.
 * Refer to [the Lua style guidelines](http://lua-users.org/wiki/LuaStyleGuide)
     for everything else.
 
