@@ -40,7 +40,7 @@ features of lövector. You can move the camera and zoom-in as much as you want.
 
 ## Features
 
-* Path tracing with `moveTo`, `lineTo` and other `<canvas>`-like commands.
+* Path tracing with `move_to`, `line_to` and other `<canvas>`-like commands.
     Supports cubic and quadratic Bézier curves, and elliptical arcs.
 * Entirely written in Lua, making it available on every platform where LÖVE is.
 * ≈ 70 KB

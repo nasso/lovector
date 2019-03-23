@@ -189,7 +189,7 @@ local INHERIT = {
 local common = {}
 
 function common.get_attr(element, attrname, default)
-    return element:getAttribute(attrname, INHERIT[attrname], default)
+    return element:get_attribute(attrname, INHERIT[attrname], default)
 end
 
 -- parse a color definition, returning the RGBA components in the 0..1 range
@@ -326,7 +326,7 @@ function common.transform_parse(svg, transform)
                 0, 0, 0, 1
             )
 
-            result = result .. "love.graphics.applyTransform(" .. svg:putData(matrix) .. ")\n"
+            result = result .. "love.graphics.applyTransform(" .. svg:put_data(matrix) .. ")\n"
         elseif cmd == "skewX" then
             local a = table.remove(args)
 
@@ -393,7 +393,7 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     end
 
     -- add the new, clean vertex buffer to the data
-    local bufferid = svg:putData(vertices)
+    local bufferid = svg:put_data(vertices)
 
     -- attributes!
 
@@ -438,7 +438,7 @@ function common.gen_subpath(svg, element, vertices, closed, options)
 
             -- use the stencil rendering function
             result = result ..
-                "love.graphics.stencil(" .. svg:putData(assert(loadstring(stencil_fn))(svg.extdata)) .. ", \"invert\")\n" ..
+                "love.graphics.stencil(" .. svg:put_data(assert(loadstring(stencil_fn))(svg.extdata)) .. ", \"invert\")\n" ..
                 "love.graphics.setStencilTest(\"notequal\", 0)\n" ..
                 "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
                 "love.graphics.rectangle(\"fill\", " .. minx .. ", " .. miny .. ", " .. (maxx-minx) .. ", " .. (maxy-miny) .. ")" ..

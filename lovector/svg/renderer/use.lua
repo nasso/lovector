@@ -66,7 +66,7 @@ function renderer:empty(svg, options)
     end
 
     -- get the actual target element
-    href = svg.document:getElementById(href)
+    href = svg.document:get_element_by_id(href)
 
     if href == nil then
         return ""
@@ -74,7 +74,7 @@ function renderer:empty(svg, options)
 
     -- clone the element
     href = href:clone()
-    href:setAttribute("id", nil)
+    href:set_attribute("id", nil)
 
     -- remove arguments we don't wanna keep
     self.attributes["x"] = nil
@@ -89,11 +89,11 @@ function renderer:empty(svg, options)
 
     -- add transform
     if x ~= 0 or y ~= 0 then
-        g:setAttribute("transform", common.get_attr(g, "transform", "") .. " translate(" .. x .. ", " .. y .. ")")
+        g:set_attribute("transform", common.get_attr(g, "transform", "") .. " translate(" .. x .. ", " .. y .. ")")
     end
 
     -- add the cloned element
-    g:appendChild(href)
+    g:append_child(href)
 
     -- return the element
     -- that will effectively replace this element with it

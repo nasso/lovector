@@ -56,61 +56,61 @@ function renderer:empty(svg, options)
         -- move to
         if op == "M" then
             while #args >= 2 do
-                path:moveTo(table.remove(args), table.remove(args))
+                path:move_to(table.remove(args), table.remove(args))
             end
 
         -- move to (relative)
         elseif op == "m" then
             while #args >= 2 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
-                path:moveTo(cpx + table.remove(args), cpy + table.remove(args))
+                path:move_to(cpx + table.remove(args), cpy + table.remove(args))
             end
 
         -- line to
         elseif op == "L" then
             while #args >= 2 do
-                path:lineTo(table.remove(args), table.remove(args))
+                path:line_to(table.remove(args), table.remove(args))
             end
 
         -- line to (relative)
         elseif op == "l" then
             while #args >= 2 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
-                path:lineTo(cpx + table.remove(args), cpy + table.remove(args))
+                path:line_to(cpx + table.remove(args), cpy + table.remove(args))
             end
 
         -- line to (horizontal)
         elseif op == "H" then
             while #args >= 1 do
-                local _, cpy = path:lastPoint()
+                local _, cpy = path:last_point()
 
-                path:lineTo(table.remove(args), cpy)
+                path:line_to(table.remove(args), cpy)
             end
 
         -- line to (horizontal, relative)
         elseif op == "h" then
             while #args >= 1 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
-                path:lineTo(cpx + table.remove(args), cpy)
+                path:line_to(cpx + table.remove(args), cpy)
             end
 
         -- line to (vertical)
         elseif op == "V" then
             while #args >= 1 do
-                local cpx = path:lastPoint()
+                local cpx = path:last_point()
 
-                path:lineTo(cpx, table.remove(args))
+                path:line_to(cpx, table.remove(args))
             end
 
         -- line to (vertical, relative)
         elseif op == "v" then
             while #args >= 1 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
-                path:lineTo(cpx, cpy + table.remove(args))
+                path:line_to(cpx, cpy + table.remove(args))
             end
 
         -- cubic bezier curve
@@ -123,7 +123,7 @@ function renderer:empty(svg, options)
                 local x = table.remove(args)
                 local y = table.remove(args)
 
-                path:bezierCurveTo(x1, y1, x2, y2, x, y)
+                path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -133,7 +133,7 @@ function renderer:empty(svg, options)
         -- cubic bezier curve (relative)
         elseif op == "c" then
             while #args >= 6 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local x1 = cpx + table.remove(args)
                 local y1 = cpy + table.remove(args)
@@ -142,7 +142,7 @@ function renderer:empty(svg, options)
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
-                path:bezierCurveTo(x1, y1, x2, y2, x, y)
+                path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -152,7 +152,7 @@ function renderer:empty(svg, options)
         -- smooth cubic Bézier curve
         elseif op == "S" then
             while #args >= 4 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local x2 = table.remove(args)
                 local y2 = table.remove(args)
@@ -163,7 +163,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                path:bezierCurveTo(x1, y1, x2, y2, x, y)
+                path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -173,7 +173,7 @@ function renderer:empty(svg, options)
         -- smooth cubic Bézier curve (relative)
         elseif op == "s" then
             while #args >= 4 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local x2 = cpx + table.remove(args)
                 local y2 = cpy + table.remove(args)
@@ -184,7 +184,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                path:bezierCurveTo(x1, y1, x2, y2, x, y)
+                path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
@@ -199,7 +199,7 @@ function renderer:empty(svg, options)
                 local x = table.remove(args)
                 local y = table.remove(args)
 
-                path:quadraticCurveTo(x1, y1, x, y)
+                path:quadratic_curve_to(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -209,14 +209,14 @@ function renderer:empty(svg, options)
         -- quadratic Bézier curve (relative)
         elseif op == "q" then
             while #args >= 4 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local x1 = cpx + table.remove(args)
                 local y1 = cpy + table.remove(args)
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
-                path:quadraticCurveTo(x1, y1, x, y)
+                path:quadratic_curve_to(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -226,7 +226,7 @@ function renderer:empty(svg, options)
         -- smooth quadratic Bézier curve
         elseif op == "T" then
             while #args >= 2 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local x = table.remove(args)
                 local y = table.remove(args)
@@ -235,7 +235,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                path:quadraticCurveTo(x1, y1, x, y)
+                path:quadratic_curve_to(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -245,7 +245,7 @@ function renderer:empty(svg, options)
         -- smooth quadratic Bézier curve (relative)
         elseif op == "t" then
             while #args >= 2 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
@@ -254,7 +254,7 @@ function renderer:empty(svg, options)
                 local x1 = cpx + cpx - prev_ctrlx
                 local y1 = cpy + cpy - prev_ctrly
 
-                path:quadraticCurveTo(x1, y1, x, y)
+                path:quadratic_curve_to(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
@@ -272,13 +272,13 @@ function renderer:empty(svg, options)
                 local x = table.remove(args)
                 local y = table.remove(args)
 
-                path:ellipticalArcTo(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
+                path:elliptical_arc_to(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
             end
 
         -- arc to (relative)
         elseif op == "a" then
             while #args >= 7 do
-                local cpx, cpy = path:lastPoint()
+                local cpx, cpy = path:last_point()
 
                 local rx = table.remove(args)
                 local ry = table.remove(args)
@@ -288,17 +288,17 @@ function renderer:empty(svg, options)
                 local x = cpx + table.remove(args)
                 local y = cpy + table.remove(args)
 
-                path:ellipticalArcTo(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
+                path:elliptical_arc_to(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
             end
 
         -- close shape (relative and absolute are the same)
         elseif op == "Z" or op == "z" then
-            path:closePath()
+            path:close_path()
         end
 
         -- if the command wasn't a curve command, set prev_ctrlx and prev_ctrly to cpx and cpy
         if not string.match(op, "[CcSsQqTt]") then
-            prev_ctrlx, prev_ctrly = path:lastPoint()
+            prev_ctrlx, prev_ctrly = path:last_point()
         end
     end
 

@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local function vecangle(ux, uy, vx, vy)
+local function vec_angle(ux, uy, vx, vy)
     -- this function assumes u and v have a length of 1
     local cross = ux * vy - uy * vx
     local dot = ux * vx + uy * vy
@@ -39,7 +39,7 @@ local function vecangle(ux, uy, vx, vy)
     end
 end
 
-local function endpoint2center(x1, y1, x2, y2, fa, fs, rx, ry, phi)
+local function endpoint_to_center(x1, y1, x2, y2, fa, fs, rx, ry, phi)
     -- Pre-compute some stuff
     local rad_phi = math.rad(phi)
     local cos_phi = math.cos(rad_phi)
@@ -71,8 +71,8 @@ local function endpoint2center(x1, y1, x2, y2, fa, fs, rx, ry, phi)
     local vx = (x1_ - cx_) / rx
     local vy = (y1_ - cy_) / ry
 
-    local theta1 = vecangle(1, 0, vx, vy)
-    local dtheta = vecangle(vx, vy, (-x1_ - cx_) / rx, (-y1_ - cy_) / ry) % 360
+    local theta1 = vec_angle(1, 0, vx, vy)
+    local dtheta = vec_angle(vx, vy, (-x1_ - cx_) / rx, (-y1_ - cy_) / ry) % 360
 
     if not fs and dtheta > 0 then
         dtheta = dtheta - 360
@@ -115,7 +115,7 @@ function PathBuilder.mt.__call(options)
     return setmetatable(self, PathBuilder)
 end
 
-function PathBuilder:lastPoint()
+function PathBuilder:last_point()
     if self.current_subpath == nil then
         return 0, 0
     end
@@ -129,13 +129,13 @@ function PathBuilder:lastPoint()
     return self.current_subpath.vertices[count - 1], self.current_subpath.vertices[count]
 end
 
-function PathBuilder:ensureSubPath(x, y)
+function PathBuilder:ensure_sub_path(x, y)
     if #(self.subpaths) == 0 then
-        self:moveTo(x, y)
+        self:move_to(x, y)
     end
 end
 
-function PathBuilder:moveTo(x, y)
+function PathBuilder:move_to(x, y)
     self.current_subpath = {
         vertices = { x, y };
         closed = false;
@@ -144,29 +144,29 @@ function PathBuilder:moveTo(x, y)
     table.insert(self.subpaths, self.current_subpath)
 end
 
-function PathBuilder:closePath()
+function PathBuilder:close_path()
     if self.current_subpath ~= nil then
         self.current_subpath.closed = true
 
         if #(self.current_subpath.vertices) >= 2 then
-            self:moveTo(self.current_subpath.vertices[1], self.current_subpath.vertices[2])
+            self:move_to(self.current_subpath.vertices[1], self.current_subpath.vertices[2])
         end
     end
 end
 
-function PathBuilder:lineTo(x, y)
+function PathBuilder:line_to(x, y)
     if self.current_subpath == nil then
-        self:ensureSubPath(x, y)
+        self:ensure_sub_path(x, y)
     else
         table.insert(self.current_subpath.vertices, x)
         table.insert(self.current_subpath.vertices, y)
     end
 end
 
-function PathBuilder:quadraticCurveTo(cpx, cpy, x, y)
-    self:ensureSubPath(cpx, cpy)
+function PathBuilder:quadratic_curve_to(cpx, cpy, x, y)
+    self:ensure_sub_path(cpx, cpy)
 
-    local spx, spy = self:lastPoint()
+    local spx, spy = self:last_point()
 
     -- generate vertices
     local curve = love.math.newBezierCurve(spx, spy, x, y)
@@ -183,10 +183,10 @@ function PathBuilder:quadraticCurveTo(cpx, cpy, x, y)
     curve:release()
 end
 
-function PathBuilder:bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
-    self:ensureSubPath(cp1x, cp1y)
+function PathBuilder:bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
+    self:ensure_sub_path(cp1x, cp1y)
 
-    local spx, spy = self:lastPoint()
+    local spx, spy = self:last_point()
 
     -- generate vertices
     local curve = love.math.newBezierCurve(spx, spy, x, y)
@@ -204,10 +204,10 @@ function PathBuilder:bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
     curve:release()
 end
 
-function PathBuilder:ellipticalArcTo(rx, ry, phi, fa, fs, x, y)
-    self:ensureSubPath(x, y)
+function PathBuilder:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
+    self:ensure_sub_path(x, y)
 
-    local sx, sy = self:lastPoint()
+    local sx, sy = self:last_point()
 
     -- argument checking
     local segments = math.max(self.options["arc_segments"], 1)
@@ -250,23 +250,23 @@ function PathBuilder:ellipticalArcTo(rx, ry, phi, fa, fs, x, y)
     -- take phi mod 360
     phi = phi % 360
 
-    local cx, cy, theta1, dtheta = endpoint2center(sx, sy, x, y, fa, fs, rx, ry, phi)
+    local cx, cy, theta1, dtheta = endpoint_to_center(sx, sy, x, y, fa, fs, rx, ry, phi)
 
-    self:ellipticalArc(cx, cy, rx, ry, theta1, theta1 + dtheta, dtheta < 0, phi)
+    self:elliptical_arc(cx, cy, rx, ry, theta1, theta1 + dtheta, dtheta < 0, phi)
 end
 
-function PathBuilder:arc(x, y, radius, startAngle, endAngle, counterclockwise)
-    self:ellipticalArc(x, y, radius, radius, startAngle, endAngle, counterclockwise, rotation)
+function PathBuilder:arc(x, y, radius, start_angle, end_angle, counterclockwise)
+    self:elliptical_arc(x, y, radius, radius, start_angle, end_angle, counterclockwise, rotation)
 end
 
-function PathBuilder:ellipticalArc(cx, cy, rx, ry, startAngle, endAngle, counterclockwise, rotation)
-    self:ensureSubPath()
+function PathBuilder:elliptical_arc(cx, cy, rx, ry, start_angle, end_angle, counterclockwise, rotation)
+    self:ensure_sub_path()
 
     local segments = math.max(self.options["arc_segments"], 1)
 
     counterclockwise = counterclockwise or false
 
-    local dtheta = endAngle - startAngle
+    local dtheta = end_angle - start_angle
 
     -- when it's the whole circumference
     if
@@ -278,7 +278,7 @@ function PathBuilder:ellipticalArc(cx, cy, rx, ry, startAngle, endAngle, counter
 
     if counterclockwise ~= (dtheta < 0) then
         dtheta = -dtheta
-        startAngle = endAngle
+        start_angle = end_angle
     end
 
     -- rotation
@@ -288,7 +288,7 @@ function PathBuilder:ellipticalArc(cx, cy, rx, ry, startAngle, endAngle, counter
 
     -- build it
     for i = 0, segments do
-        local theta = math.rad(startAngle + dtheta * (i / segments))
+        local theta = math.rad(start_angle + dtheta * (i / segments))
         local cos_theta = math.cos(theta)
         local sin_theta = math.sin(theta)
 

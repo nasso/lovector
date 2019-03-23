@@ -87,7 +87,7 @@ function SVG.mt.__call(_, svg, options)
     return svg
 end
 
-function SVG:putData(data)
+function SVG:put_data(data)
     table.insert(self.extdata, data)
     return "extdata[" .. #(self.extdata) .. "]"
 end

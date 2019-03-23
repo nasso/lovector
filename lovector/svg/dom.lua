@@ -46,7 +46,7 @@ for k, v in pairs(TOKEN_LIST) do
 end
 
 -- Parse attributes
-local function _attributes(text)
+local function parse_attributes(text)
     local attributes = {}
 
     local i, j = 0, 0
@@ -146,19 +146,19 @@ function DOM.Document.mt.__call(_, source)
         empty = empty == "/"
 
         if not closes then
-            local element = DOM.Element(name, _attributes(attributes))
+            local element = DOM.Element(name, parse_attributes(attributes))
             element.parent = current_parent
 
             -- Put it in the linear element table
             table.insert(self.linear_list, element)
 
             -- Cache id
-            if element:getAttribute("id") ~= nil then
-                self.idmap[element:getAttribute("id")] = element
+            if element:get_attribute("id") ~= nil then
+                self.idmap[element:get_attribute("id")] = element
             end
 
             if current_parent ~= nil then
-                current_parent:appendChild(element)
+                current_parent:append_child(element)
             else
                 assert(self.root == nil, "Can only have 1 root element")
 
@@ -179,7 +179,7 @@ function DOM.Document.mt.__call(_, source)
     return setmetatable(self, DOM.Document)
 end
 
-function DOM.Document:getElementById(id)
+function DOM.Document:get_element_by_id(id)
     return self.idmap[id]
 end
 
@@ -213,7 +213,7 @@ function DOM.Element.mt.__call(_, name, attributes, children)
     return self
 end
 
-function DOM.Element:insertChild(i, element)
+function DOM.Element:insert_child(i, element)
     if self.children == nil then
         self.children = {}
     end
@@ -221,7 +221,7 @@ function DOM.Element:insertChild(i, element)
     table.insert(self.children, i, element)
 end
 
-function DOM.Element:removeChild(element)
+function DOM.Element:remove_child(element)
     if self.children == nil then
         return
     end
@@ -237,20 +237,20 @@ function DOM.Element:removeChild(element)
     end
 end
 
-function DOM.Element:appendChild(element)
+function DOM.Element:append_child(element)
     if self.children == nil then
         self.children = {}
     end
 
     if element.parent ~= nil then
-        element.parent:removeChild(element)
+        element.parent:remove_child(element)
     end
 
     table.insert(self.children, element)
     element.parent = self
 end
 
-function DOM.Element:getAttribute(name, inherit, default)
+function DOM.Element:get_attribute(name, inherit, default)
     local value = nil
     local this = self
 
@@ -272,7 +272,7 @@ function DOM.Element:getAttribute(name, inherit, default)
     end
 end
 
-function DOM.Element:setAttribute(name, value)
+function DOM.Element:set_attribute(name, value)
     if self.attributes == nil then
         self.attributes = {}
     end

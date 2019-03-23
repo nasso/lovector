@@ -40,7 +40,7 @@ function renderer:empty(svg, options)
 
     local path = PathBuilder(options)
 
-    path:ellipticalArc(cx, cy, rx, ry, 0, 360)
+    path:elliptical_arc(cx, cy, rx, ry, 0, 360)
 
     return common.gen_path(svg, self, path, options)
 end
