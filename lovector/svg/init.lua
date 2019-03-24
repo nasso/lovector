@@ -42,9 +42,7 @@ function SVG.mt.__call(_, svg, options)
     -- Arg check
     assert(type(svg) == "string", "\"svg\" should be a string, but is " .. type(svg))
 
-    if options == nil then
-        options = {}
-    end
+    options = options or {}
 
     for k, v in pairs(DEFAULT_OPTIONS) do
         if options[k] == nil then

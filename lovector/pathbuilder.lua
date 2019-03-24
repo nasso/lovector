@@ -96,9 +96,7 @@ local DEFAULT_OPTIONS = {
 }
 
 function PathBuilder.mt.__call(options)
-    if options == nil then
-        options = {}
-    end
+    options = options or {}
 
     for k, v in pairs(DEFAULT_OPTIONS) do
         if options[k] == nil then
