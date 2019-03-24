@@ -426,10 +426,6 @@ function common.remove_doubles(vertices, epsilon)
 end
 
 function common.gen_shape_stencil(svg, vertices, fill_rule)
-    if fill_rule ~= "evenodd" and fill_rule ~= "nonzero" then
-        return ""
-    end
-
     local vertices_pairs = {}
     for i = 1, #vertices, 2 do
         table.insert(vertices_pairs, { vertices[i], vertices[i+1] })
@@ -450,11 +446,17 @@ function common.gen_shape_stencil(svg, vertices, fill_rule)
             love.graphics.setMeshCullMode("back")
             love.graphics.stencil({fn_draw_mesh}, "decrementwrap", 0, true)
         ]]
-    else
+    elseif fill_rule == "evenodd" then
         -- evenodd stencil
         result = [[
             love.graphics.setMeshCullMode("none")
             love.graphics.stencil({fn_draw_mesh}, "invert")
+        ]]
+    else
+        -- default stencil
+        result = [[
+            love.graphics.setMeshCullMode("none")
+            love.graphics.stencil({fn_draw_mesh}, "replace", 0xFF)
         ]]
     end
 
