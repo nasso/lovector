@@ -27,11 +27,8 @@ local DOM = require(cwd .. "svg.dom")
 local common = require(cwd .. "svg.common")
 
 local DEFAULT_OPTIONS = {
-    ["arc_segments"] = 50;
-    ["bezier_depth"] = 5;
-    ["debug"] = true;
+    ["debug"] = false;
     ["path_debug"] = false;
-    ["use_love_fill"] = false;
 }
 
 local SVG = {}
@@ -85,6 +82,10 @@ function SVG.mt.__call(_, svg, options)
     svg.script = assert(loadstring(svg.script))
 
     return svg
+end
+
+function SVG:put_function(source)
+    return self:put_data(assert(loadstring("local extdata = ...\nreturn function()\n" .. source .. "\nend\n"))(self.extdata))
 end
 
 function SVG:put_data(data)

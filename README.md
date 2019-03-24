@@ -49,7 +49,7 @@ Here's a summary table of what lövector does and doesn't support for now:
 
 |       feature       |      supported     |
 |:-------------------:|:------------------:|
-| Non-Zero Fill Rule  | :x:                |
+| Non-Zero Fill Rule  | :heavy_check_mark: |
 | Even-Odd Fill Rule  | :heavy_check_mark: |
 | Solid Colors        | :heavy_check_mark: |
 | Linear Gradients    | :x:                |

@@ -186,11 +186,11 @@ local INHERIT = {
     ["stroke-width"] = true;
 }
 
-local common = {}
+local SHAPE_MESH_VERTEX_FORMAT = {
+    { "VertexPosition", "float", 2 }
+}
 
-function common.get_attr(element, attrname, default)
-    return element:get_attribute(attrname, INHERIT[attrname], default)
-end
+local common = {}
 
 function common.hsla_to_rgba(h, s, l, a)
     if s <= 0 then
@@ -211,6 +211,10 @@ function common.hsla_to_rgba(h, s, l, a)
     end
 
     return (r + m), (g + m), (b + m), a
+end
+
+function common.get_attr(element, attrname, default)
+    return element:get_attribute(attrname, INHERIT[attrname], default)
 end
 
 -- parse a color definition, returning the RGBA components in the 0..1 range
@@ -421,22 +425,65 @@ function common.remove_doubles(vertices, epsilon)
     return clean_vertices
 end
 
+function common.gen_shape_stencil(svg, vertices, fill_rule)
+    if fill_rule ~= "evenodd" and fill_rule ~= "nonzero" then
+        return ""
+    end
+
+    local vertices_pairs = {}
+    for i = 1, #vertices, 2 do
+        table.insert(vertices_pairs, { vertices[i], vertices[i+1] })
+    end
+
+    -- create the Mesh
+    local mesh = love.graphics.newMesh(SHAPE_MESH_VERTEX_FORMAT, vertices_pairs, "fan", "static")
+
+    -- output
+    local result = nil
+
+    if fill_rule == "nonzero" then
+        -- nonzero stencil
+        result = [[
+            love.graphics.setMeshCullMode("front")
+            love.graphics.stencil({fn_draw_mesh}, "incrementwrap")
+
+            love.graphics.setMeshCullMode("back")
+            love.graphics.stencil({fn_draw_mesh}, "decrementwrap", 0, true)
+        ]]
+    else
+        -- evenodd stencil
+        result = [[
+            love.graphics.setMeshCullMode("none")
+            love.graphics.stencil({fn_draw_mesh}, "invert")
+        ]]
+    end
+
+    return result:gsub("{fn_draw_mesh}", svg:put_function("love.graphics.draw(" .. svg:put_data(mesh) .. ")"))
+end
+
+function common.gen_paint_on_stencil(r, g, b, a)
+    return ([[
+        love.graphics.setStencilTest("notequal", 0)
+
+        love.graphics.push()
+        love.graphics.origin()
+        love.graphics.setColor({r}, {g}, {b}, {a})
+        love.graphics.rectangle("fill", 0, 0, love.graphics.getDimensions())
+        love.graphics.pop()
+
+        love.graphics.setStencilTest()
+    ]])
+    :gsub("{r}", r)
+    :gsub("{g}", g)
+    :gsub("{b}", b)
+    :gsub("{a}", a)
+end
+
 function common.gen_subpath(svg, element, vertices, closed, options)
     -- not enough vertices
     if #vertices < 4 then
         return ""
     end
-
-    -- remove doubles
-    vertices = common.remove_doubles(vertices, 1 / 1000)
-
-    -- check vertice count again because it might have changed
-    if #vertices < 4 then
-        return ""
-    end
-
-    -- add the new, clean vertex buffer to the data
-    local bufferid = svg:put_data(vertices)
 
     -- attributes!
 
@@ -452,6 +499,9 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     -- line width
     local linewidth = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
 
+    -- fill rule
+    local fill_rule = common.get_attr(element, "fill-rule", "nonzero")
+
     -- check if we're even going to draw anything
     if f_red == nil and s_red == nil then
         return ""
@@ -461,36 +511,15 @@ function common.gen_subpath(svg, element, vertices, closed, options)
 
     -- fill
     if f_red ~= nil and #vertices >= 6 then
-        if options.use_love_fill == true then
-            result = result ..
-                "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
-                "love.graphics.polygon(\"fill\", " .. bufferid .. ")"
-        else
-            local minx, miny, maxx, maxy = vertices[1], vertices[2], vertices[1], vertices[2]
-
-            for i = 3, #vertices, 2 do
-                minx = math.min(minx, vertices[i])
-                miny = math.min(miny, vertices[i+1])
-                maxx = math.max(maxx, vertices[i])
-                maxy = math.max(maxy, vertices[i+1])
-            end
-
-            local stencil_fn =
-                "local extdata = ...\n" ..
-                "return function() love.graphics.polygon(\"fill\", " .. bufferid .. ") end\n"
-
-            -- use the stencil rendering function
-            result = result ..
-                "love.graphics.stencil(" .. svg:put_data(assert(loadstring(stencil_fn))(svg.extdata)) .. ", \"invert\")\n" ..
-                "love.graphics.setStencilTest(\"notequal\", 0)\n" ..
-                "love.graphics.setColor(" .. f_red .. ", " .. f_green .. ", " .. f_blue .. ", " .. (f_alpha * f_opacity * opacity) .. ")\n" ..
-                "love.graphics.rectangle(\"fill\", " .. minx .. ", " .. miny .. ", " .. (maxx-minx) .. ", " .. (maxy-miny) .. ")" ..
-                "love.graphics.setStencilTest()\n"
-        end
+        result = result ..
+            common.gen_shape_stencil(svg, vertices, fill_rule) ..
+            common.gen_paint_on_stencil(f_red, f_green, f_blue, f_alpha * f_opacity * opacity)
     end
 
     -- stroke
     if s_red ~= nil and #vertices >= 4 then
+        local bufferid = svg:put_data(common.remove_doubles(vertices, 1/1000))
+
         result = result .. "love.graphics.setColor(" .. s_red .. ", " .. s_green .. ", " .. s_blue .. ", " .. (s_alpha * s_opacity * opacity) .. ")\n"
         result = result .. "love.graphics.setLineWidth(" .. linewidth .. ")\n"
 
@@ -502,10 +531,10 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     end
 
     if options["path_debug"] then
-        local r,g,b = common.hsla_to_rgba(math.random(), 1, .5)
+        local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
         result = result .. "love.graphics.setColor(" .. r .. ", " .. g .. ", " .. b .. ", 0.5)\n"
         result = result .. "love.graphics.setPointSize(5)\n"
-        result = result .. "love.graphics.points(" .. bufferid .. ")\n"
+        result = result .. "love.graphics.points(" .. svg:put_data(vertices) .. ")\n"
     end
 
     return result

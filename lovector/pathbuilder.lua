@@ -106,13 +106,18 @@ function PathBuilder.mt.__call(options)
         end
     end
 
-    local self = {}
-    self.subpaths = {}
-    self.current_subpath = nil
-
+    local self = setmetatable({}, PathBuilder)
     self.options = options
 
-    return setmetatable(self, PathBuilder)
+    self:clear()
+
+    return self
+end
+
+function PathBuilder:clear()
+    self.subpaths = {}
+    self.current_subpath = nil
+    self.stroke_shape = nil
 end
 
 function PathBuilder:last_point()
