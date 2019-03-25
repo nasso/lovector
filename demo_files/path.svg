@@ -194,7 +194,7 @@
                      a25,100 -30 0,1 50,-25 l 50,-25" />
         </g>
 
-        <g transform="translate(300 200) scale(25)">
+        <g transform="translate(300 180) scale(25)">
             <!--
             Upper left path:
             Effect of the "miter" value
@@ -207,14 +207,14 @@
             Effect of the "round" value
             -->
             <path d="M7,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="round" />
+                  stroke-linejoin="round" stroke-linecap="butt" />
 
             <!--
             Upper right path:
             Effect of the "bevel" value
             -->
             <path d="M13,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="bevel" />
+                  stroke-linejoin="bevel" stroke-linecap="round" />
 
             <!--
             Bottom left path:
@@ -222,7 +222,7 @@
             with fallback to "miter" if not supported.
             -->
             <path d="M3,11 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="miter-clip" />
+                  stroke-linejoin="miter-clip" stroke-linecap="square" />
 
             <!--
             Bottom right path:
