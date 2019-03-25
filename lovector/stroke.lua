@@ -153,7 +153,7 @@ local function generate_caps(path)
 
     -- end cap
     last.cap = true
-    last.previous = path[2]
+    last.previous = path[#path - 1]
     last.next = nil
     last.dx, last.dy = get_direction(last.previous, last)
 end
