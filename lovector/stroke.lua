@@ -24,6 +24,7 @@ SOFTWARE.
 
 local DEFAULT_OPTIONS = {
     ["stroke_segment_min_length"] = 1 / 1000;
+    ["stroke_join_discard_threshold"] = 1 / 5;
 }
 
 local function copy_vertices(vertices)
@@ -43,6 +44,24 @@ local function euclidian_distance_squared(a, b)
     local dx = b.x - a.x
     local dy = b.y - a.y
     return dx * dx + dy * dy
+end
+
+local function intersection(a_x, a_y, b_x, b_y, c_x, c_y, d_x, d_y)
+    local s10_x = b_x - a_x
+    local s10_y = b_y - a_y
+    local s32_x = d_x - c_x
+    local s32_y = d_y - c_y
+
+    local denom = s10_x * s32_y - s32_x * s10_y
+
+    if denom == 0 then
+        -- Collinear
+        return nil, nil
+    end
+
+    local t = (s32_x * (a_y - c_y) - s32_y * (a_x - c_x)) / denom
+
+    return a_x + (t * s10_x), a_y + (t * s10_y)
 end
 
 local function prune_small_lines(vertices, closed, min_len)
@@ -97,8 +116,8 @@ end
 
 local function get_bisector(a, b, c)
     -- direction
-    local dx = (a.x + c.x) - b.x
-    local dy = (a.y + c.y) - b.y
+    local dx = a.x + c.x - b.x * 2
+    local dy = a.y + c.y - b.y * 2
 
     -- length
     local len = math.sqrt(dx * dx + dy * dy)
@@ -198,17 +217,60 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
 
     repeat
         if p.join == true then
+            local cross = p.dx1 * p.dy2 - p.dx2 * p.dy1
+
+            -- first perpendicular segment of the join
+            -- the one that's "coming" from the previous line
             table.insert(vertices, p.x + p.dy1 * half_width)
             table.insert(vertices, p.y - p.dx1 * half_width)
 
             table.insert(vertices, p.x - p.dy1 * half_width)
             table.insert(vertices, p.y + p.dx1 * half_width)
 
-            table.insert(vertices, p.x - p.dy2 * half_width)
-            table.insert(vertices, p.y + p.dx2 * half_width)
+            -- only proceed if the angle difference is big enough
+            if math.abs(cross) > options["stroke_join_discard_threshold"] then
+                if linejoin == "miter" then
+                    -- "outer" vertices (those on the bigger side of the angle) are...
+                    local a_x = 0
+                    local a_y = 0
+                    local b_x = 0
+                    local b_y = 0
 
-            table.insert(vertices, p.x + p.dy2 * half_width)
-            table.insert(vertices, p.y - p.dx2 * half_width)
+                    -- ...either on one side...
+                    if cross > 0 then
+                        a_x = p.x + p.dy1 * half_width
+                        a_y = p.y - p.dx1 * half_width
+
+                        b_x = p.x - p.dy2 * half_width
+                        b_y = p.y + p.dx2 * half_width
+
+                    -- ...or the other
+                    else
+                        a_x = p.x - p.dy1 * half_width
+                        a_y = p.y + p.dx1 * half_width
+
+                        b_x = p.x + p.dy2 * half_width
+                        b_y = p.y - p.dx2 * half_width
+                    end
+
+                    -- calculate the intersection of the lines
+                    local mx, my = intersection(
+                        a_x, a_y, a_x + p.dx1, a_y + p.dy1,
+                        b_x, b_y, b_x + p.dx2, b_y + p.dy2
+                    )
+
+                    table.insert(vertices, mx)
+                    table.insert(vertices, my)
+                end
+
+                -- second perpendicular segment of the join
+                -- the one that's "going out" to the next line
+                table.insert(vertices, p.x - p.dy2 * half_width)
+                table.insert(vertices, p.y + p.dx2 * half_width)
+
+                table.insert(vertices, p.x + p.dy2 * half_width)
+                table.insert(vertices, p.y - p.dx2 * half_width)
+            end
         elseif p.cap == true then
             -- ~~fluffy~~ butt
             table.insert(vertices, p.x - p.dy * half_width)
@@ -221,6 +283,7 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
         p = p.next
     until p == nil or p == path[1]
 
+    -- close the shape
     if closed then
         table.insert(vertices, p.x + p.dy1 * half_width)
         table.insert(vertices, p.y - p.dx1 * half_width)

@@ -494,14 +494,57 @@ function common.gen_subpath(svg, element, vertices, closed, options)
 
             -- paint everything!!!!!
             result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
+
+            if options["stroke_debug"] then
+                local debug_code = nil
+
+                if options["stroke_debug"] == "wireframe" then
+                    debug_code = [[
+                        love.graphics.setColor({r}, {g}, {b}, 0.5)
+                        love.graphics.setLineJoin('none')
+                        love.graphics.setLineWidth(0.01)
+                        love.graphics.line({vertices})
+                    ]]
+                else
+                    debug_code = [[
+                        love.graphics.setColor({r}, {g}, {b}, 0.5)
+                        love.graphics.setPointSize(5)
+                        love.graphics.points({vertices})
+                    ]]
+                end
+
+                for i = 1, #stroke_slices do
+                    local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
+                    result = result .. debug_code
+                    :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
+                    :gsub("{vertices}", svg:put_data(stroke_slices[i]))
+                end
+            end
         end
     end
 
     if options["path_debug"] then
+        local debug_code = nil
+
+        if options["path_debug"] == "wireframe" then
+            debug_code = [[
+                love.graphics.setColor({r}, {g}, {b}, 0.5)
+                love.graphics.setLineJoin('none')
+                love.graphics.setLineWidth(0.01)
+                love.graphics.line({vertices})
+            ]]
+        else
+            debug_code = [[
+                love.graphics.setColor({r}, {g}, {b}, 0.5)
+                love.graphics.setPointSize(5)
+                love.graphics.points({vertices})
+            ]]
+        end
+
         local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
-        result = result .. "love.graphics.setColor(" .. r .. ", " .. g .. ", " .. b .. ", 0.5)\n"
-        result = result .. "love.graphics.setPointSize(5)\n"
-        result = result .. "love.graphics.points(" .. svg:put_data(vertices) .. ")\n"
+        result = result .. debug_code
+        :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
+        :gsub("{vertices}", svg:put_data(vertices))
     end
 
     return result

@@ -55,7 +55,7 @@ Here's a summary table of what lövector does and doesn't support for now:
 | Linear Gradients    | :x:                |
 | Radial Gradients    | :x:                |
 | Line Dashes         | :x:                |
-| Line Joins          | :x:                |
+| Line Joins          | (bevel, miter)     |
 | Line Caps           | :x:                |
 
 ### SVG

@@ -29,6 +29,7 @@ local common = require(cwd .. "svg.common")
 local DEFAULT_OPTIONS = {
     ["debug"] = false;
     ["path_debug"] = false;
+    ["stroke_debug"] = false;
 }
 
 local SVG = {}
