@@ -463,7 +463,7 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     local stroke_width = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
     local stroke_linecap = common.get_attr(element, "stroke-linecap", "butt")
     local stroke_linejoin = common.get_attr(element, "stroke-linejoin", "miter")
-    local stroke_miterlimit = tonumber(common.get_attr(element, "stroke-miterlimit", "1"), 10)
+    local stroke_miterlimit = tonumber(common.get_attr(element, "stroke-miterlimit", "4"), 10)
 
     -- check if we're even going to draw anything
     if f_red == nil and s_red == nil then

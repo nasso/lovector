@@ -40,28 +40,27 @@ local function copy_vertices(vertices)
     return copy
 end
 
-local function euclidian_distance_squared(a, b)
-    local dx = b.x - a.x
-    local dy = b.y - a.y
-    return dx * dx + dy * dy
+local function vec_angle(ux, uy, vx, vy)
+    -- this function assumes u and v have a length of 1
+    local cross = ux * vy - uy * vx
+    local dot = ux * vx + uy * vy
+
+    -- clamp it to avoid floating-point arithmetics errors
+    dot = math.min(1, math.max(-1, dot))
+
+    local result = math.acos(dot)
+
+    if cross >= 0 then
+        return result
+    else
+        return -result
+    end
 end
 
-local function intersection(a_x, a_y, b_x, b_y, c_x, c_y, d_x, d_y)
-    local s10_x = b_x - a_x
-    local s10_y = b_y - a_y
-    local s32_x = d_x - c_x
-    local s32_y = d_y - c_y
-
-    local denom = s10_x * s32_y - s32_x * s10_y
-
-    if denom == 0 then
-        -- Collinear
-        return nil, nil
-    end
-
-    local t = (s32_x * (a_y - c_y) - s32_y * (a_x - c_x)) / denom
-
-    return a_x + (t * s10_x), a_y + (t * s10_y)
+local function euclidian_distance_squared(a_x, a_y, b_x, b_y)
+    local dx = b_x - a_x
+    local dy = b_y - a_y
+    return dx * dx + dy * dy
 end
 
 local function prune_small_lines(vertices, closed, min_len)
@@ -85,7 +84,7 @@ local function prune_small_lines(vertices, closed, min_len)
             end
         end
 
-        if euclidian_distance_squared(a, b) < min_len then
+        if euclidian_distance_squared(a.x, a.y, b.x, b.y) < min_len then
             -- remove this point
             table.remove(vertices, i)
 
@@ -116,17 +115,31 @@ end
 
 local function get_bisector(a, b, c)
     -- direction
-    local dx = a.x + c.x - b.x * 2
-    local dy = a.y + c.y - b.y * 2
+    local ba_x, ba_y = get_direction(b, a)
+    local bc_x, bc_y = get_direction(b, c)
 
-    -- length
-    local len = math.sqrt(dx * dx + dy * dy)
+    -- length of BA and BC
+    local ba_len = math.sqrt(ba_x * ba_x + ba_y * ba_y)
+    local bc_len = math.sqrt(bc_x * bc_x + bc_y * bc_y)
 
-    -- normalize direction
-    dx = dx / len
-    dy = dy / len
+    -- normalize BA and BC
+    ba_x = ba_x / ba_len
+    ba_y = ba_y / ba_len
+    bc_x = bc_x / bc_len
+    bc_y = bc_y / bc_len
 
-    return dx, dy
+    -- calculate BD (D is a point of the bisector that isn't B)
+    local bd_x = ba_x + bc_x
+    local bd_y = ba_y + bc_y
+
+    -- length of BD
+    local bd_len = math.sqrt(bd_x * bd_x + bd_y * bd_y)
+
+    -- normalize BD
+    bd_x = bd_x / bd_len
+    bd_y = bd_y / bd_len
+
+    return bd_x, bd_y
 end
 
 local function create_join(a, b, c)
@@ -253,14 +266,14 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
                         b_y = p.y - p.dx2 * half_width
                     end
 
-                    -- calculate the intersection of the lines
-                    local mx, my = intersection(
-                        a_x, a_y, a_x + p.dx1, a_y + p.dy1,
-                        b_x, b_y, b_x + p.dx2, b_y + p.dy2
-                    )
+                    local miter_len = half_width / math.cos(vec_angle(-p.dx1, -p.dy1, p.dx2, p.dy2) / 2)
 
-                    table.insert(vertices, mx)
-                    table.insert(vertices, my)
+                    local ratio = miter_len / half_width
+
+                    if ratio < miterlimit then
+                        table.insert(vertices, p.x - p.bx * miter_len)
+                        table.insert(vertices, p.y - p.by * miter_len)
+                    end
                 end
 
                 -- second perpendicular segment of the join

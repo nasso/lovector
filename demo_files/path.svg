@@ -200,21 +200,21 @@
             Effect of the "miter" value
             -->
             <path d="M1,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="miter" />
+                  stroke-linejoin="miter" stroke-linecap="butt" />
 
             <!--
             Center path:
             Effect of the "round" value
             -->
             <path d="M7,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="round" stroke-linecap="butt" />
+                  stroke-linejoin="round" stroke-linecap="round" />
 
             <!--
             Upper right path:
             Effect of the "bevel" value
             -->
             <path d="M13,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="bevel" stroke-linecap="round" />
+                  stroke-linejoin="bevel" stroke-linecap="square" />
 
             <!--
             Bottom left path:
@@ -222,7 +222,7 @@
             with fallback to "miter" if not supported.
             -->
             <path d="M3,11 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="miter-clip" stroke-linecap="square" />
+                  stroke-linejoin="miter-clip" />
 
             <!--
             Bottom right path:
@@ -248,6 +248,34 @@
             <use href="#highlight" x="12" />
             <use href="#highlight" x="2" y="6" />
             <use href="#highlight" x="8" y="6" />
+        </g>
+
+        <g transform="translate(450 80) scale(20)">
+            <!-- Effect of the "miter" value -->
+            <path d="M1,5 l2,-3 l2,3" stroke="black" fill="none"
+                  stroke-linejoin="miter" />
+
+            <!-- Effect of the "miter" value on a sharp angle
+            where de default miter limit is exceeded -->
+            <path d="M7,5 l0.75,-3 l0.75,3" stroke="black" fill="none"
+                  stroke-linejoin="miter" />
+
+            <!-- the following red dotted line show where
+            the miter value falls back to the bevel value -->
+            <path d="M0,0 h10" stroke="red" stroke-dasharray="0.05"  stroke-width="0.025"/>
+
+            <!-- the following pink lines highlight the position of the path for each stroke -->
+            <g>
+                <path d="M1,5 l2,-3 l2,3" stroke="pink" fill="none" stroke-width="0.025" />
+                <circle cx="1" cy="5" r="0.05" fill="pink" />
+                <circle cx="3" cy="2" r="0.05" fill="pink" />
+                <circle cx="5" cy="5" r="0.05" fill="pink" />
+
+                <path d="M7,5 l0.75,-3 l0.75,3" stroke="pink" fill="none" stroke-width="0.025" />
+                <circle cx="7"    cy="5" r="0.05" fill="pink" />
+                <circle cx="7.75" cy="2" r="0.05" fill="pink" />
+                <circle cx="8.5"  cy="5" r="0.05" fill="pink" />
+            </g>
         </g>
     </g>
 </svg>
