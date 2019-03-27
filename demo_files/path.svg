@@ -199,8 +199,7 @@
             Upper left path:
             Effect of the "miter" value
             -->
-            <path d="M1,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none"
-                  stroke-linejoin="miter" stroke-linecap="butt" />
+            <path d="M1,5 a2,2 0,0,0 2,-3 a3,3 0 0 1 2,3.5" stroke="black" fill="none" />
 
             <!--
             Center path:

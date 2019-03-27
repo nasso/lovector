@@ -27,7 +27,7 @@ local stroke = {}
 local DEFAULT_OPTIONS = {
     ["stroke_segment_min_length"] = 1 / 1000;
     ["stroke_join_discard_threshold"] = 1 / 5;
-    ["stroke_join_arc_segments"] = 10;
+    ["stroke_arc_segments"] = 10;
 }
 
 local function copy_vertices(vertices)
@@ -232,7 +232,7 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
     local p = path[1]
 
     local stroke_join_discard_threshold = options["stroke_join_discard_threshold"]
-    local stroke_join_arc_segments = options["stroke_join_arc_segments"]
+    local stroke_arc_segments = options["stroke_arc_segments"]
 
     repeat
         if p.join == true then
@@ -287,15 +287,15 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                     local dtheta = vec_angle(a_x, a_y, b_x, b_y)
 
                     -- add every point of the arc
-                    for i = 0, stroke_join_arc_segments do
-                        local theta = start_angle - dtheta * (i / stroke_join_arc_segments)
+                    for i = 0, stroke_arc_segments do
+                        local theta = start_angle - dtheta * (i / stroke_arc_segments)
                         local cos_theta = math.cos(theta)
                         local sin_theta = math.sin(theta)
 
                         table.insert(vertices, p.x + cos_theta * half_width)
                         table.insert(vertices, p.y - sin_theta * half_width)
 
-                        if i ~= stroke_join_arc_segments then
+                        if i ~= stroke_arc_segments then
                             table.insert(vertices, p.x)
                             table.insert(vertices, p.y)
                         end
@@ -328,6 +328,27 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
 
                 table.insert(vertices, p.x + (p.dx * side + p.dy) * half_width)
                 table.insert(vertices, p.y + (p.dy * side - p.dx) * half_width)
+
+            -- "round" line cap
+            elseif line_cap == "round" then
+                local side = (p.next == nil) and 0 or 1
+
+                -- similar to round joins
+                local start_angle = vec_angle(-p.dy, p.dx, 1, 0)
+
+                -- add every point of the arc
+                for i = 0, stroke_arc_segments do
+                    local per = i / stroke_arc_segments - side
+
+                    local theta = start_angle - math.pi * 0.5 * per
+                    local phi = start_angle - math.pi * (1.0 - 0.5 * per)
+
+                    table.insert(vertices, p.x - math.cos(phi) * half_width)
+                    table.insert(vertices, p.y + math.sin(phi) * half_width)
+
+                    table.insert(vertices, p.x - math.cos(theta) * half_width)
+                    table.insert(vertices, p.y + math.sin(theta) * half_width)
+                end
             end
         end
 
