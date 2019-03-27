@@ -482,7 +482,7 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     -- stroke
     if s_red ~= nil and #vertices >= 4 then
         -- stroke the path
-        local stroke_slices = stroke(vertices, closed, stroke_width, stroke_linecap, stroke_linejoin, stroke_miterlimit, options)
+        local stroke_slices = stroke.gen_strips(vertices, closed, stroke_width, stroke_linecap, stroke_linejoin, stroke_miterlimit, options)
 
         if stroke_slices ~= nil then
             -- put each slice on the stencil

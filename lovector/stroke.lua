@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
+local stroke = {}
+
 local DEFAULT_OPTIONS = {
     ["stroke_segment_min_length"] = 1 / 1000;
     ["stroke_join_discard_threshold"] = 1 / 5;
@@ -190,7 +192,7 @@ local function generate_caps(path)
     last.dx, last.dy = get_direction(last.previous, last)
 end
 
-local function stroke(path, closed, width, line_cap, line_join, miter_limit, options)
+function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit, options)
     -- a single point or less gives no line
     if #path <= 2 then
         return nil
