@@ -27,6 +27,7 @@ local stroke = {}
 local DEFAULT_OPTIONS = {
     ["stroke_segment_min_length"] = 1 / 1000;
     ["stroke_join_discard_threshold"] = 1 / 5;
+    ["stroke_join_arc_segments"] = 10;
 }
 
 local function copy_vertices(vertices)
@@ -231,6 +232,7 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
     local p = path[1]
 
     local stroke_join_discard_threshold = options["stroke_join_discard_threshold"]
+    local stroke_join_arc_segments = options["stroke_join_arc_segments"]
 
     repeat
         if p.join == true then
@@ -256,6 +258,47 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                     if ratio < miter_limit then
                         table.insert(vertices, p.x - p.bx * miter_len)
                         table.insert(vertices, p.y - p.by * miter_len)
+                    end
+                elseif line_join == "round" then
+                    -- "outer" vertices (those on the bigger side of the angle) are...
+                    local a_x = 0
+                    local a_y = 0
+                    local b_x = 0
+                    local b_y = 0
+
+                    -- ...either on one side...
+                    if cross > 0 then
+                        a_x = p.dy1
+                        a_y = -p.dx1
+
+                        b_x = -p.dy2
+                        b_y = p.dx2
+
+                    -- ...or the other
+                    else
+                        a_x = -p.dy1
+                        a_y = p.dx1
+
+                        b_x = p.dy2
+                        b_y = -p.dx2
+                    end
+
+                    local start_angle = vec_angle(a_x, a_y, 1, 0)
+                    local dtheta = vec_angle(a_x, a_y, b_x, b_y)
+
+                    -- add every point of the arc
+                    for i = 0, stroke_join_arc_segments do
+                        local theta = start_angle - dtheta * (i / stroke_join_arc_segments)
+                        local cos_theta = math.cos(theta)
+                        local sin_theta = math.sin(theta)
+
+                        table.insert(vertices, p.x + cos_theta * half_width)
+                        table.insert(vertices, p.y - sin_theta * half_width)
+
+                        if i ~= stroke_join_arc_segments then
+                            table.insert(vertices, p.x)
+                            table.insert(vertices, p.y)
+                        end
                     end
                 end
 
