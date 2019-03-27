@@ -22,15 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
+local cwd = (...):match('(.*lovector).-$') .. "."
+local vecutils = require(cwd .. "vecutils")
+
 local stroke = {}
 
 local DEFAULT_OPTIONS = {
     ["stroke_segment_min_length"] = 1 / 1000;
     ["stroke_join_discard_threshold"] = 1 / 5;
-    ["stroke_arc_segments"] = 10;
+    ["stroke_arc_segments"] = 20;
 }
 
-local function copy_vertices(vertices)
+local function build_vertices_table(vertices)
     local copy =  {}
 
     for i = 1, #vertices, 2 do
@@ -41,64 +44,6 @@ local function copy_vertices(vertices)
     end
 
     return copy
-end
-
-local function vec_angle(ux, uy, vx, vy)
-    -- this function assumes u and v have a length of 1
-    local cross = ux * vy - uy * vx
-    local dot = ux * vx + uy * vy
-
-    -- clamp it to avoid floating-point arithmetics errors
-    dot = math.min(1, math.max(-1, dot))
-
-    local result = math.acos(dot)
-
-    if cross >= 0 then
-        return result
-    else
-        return -result
-    end
-end
-
-local function euclidian_distance_squared(a_x, a_y, b_x, b_y)
-    local dx = b_x - a_x
-    local dy = b_y - a_y
-    return dx * dx + dy * dy
-end
-
-local function prune_small_lines(vertices, closed, min_len)
-    -- default length to 0
-    min_len = min_len or 0
-
-    -- square the length so that we don't have to take the sqrt of distances
-    min_len = min_len * min_len
-
-    -- add all the others
-    local i = 1
-    while i <= #vertices do
-        local a = vertices[i]
-        local b = vertices[i + 1]
-
-        if i == #vertices then
-            if closed then
-                b = vertices[1]
-            else
-                break
-            end
-        end
-
-        if euclidian_distance_squared(a.x, a.y, b.x, b.y) < min_len then
-            -- remove this point
-            table.remove(vertices, i)
-
-            -- move the end point to the middle of the line
-            b.x = (a.x + b.x) / 2
-            b.y = (a.y + b.y) / 2
-        else
-            -- move to the next line
-            i = i + 1
-        end
-    end
 end
 
 local function get_direction(a, b)
@@ -208,11 +153,11 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
         end
     end
 
-    -- copy the path
-    path = copy_vertices(path)
+    -- build a { x = ...; y = ...; } table from a { x, y, x, y, x, y }
+    path = build_vertices_table(path)
 
-    -- prune zero-length
-    prune_small_lines(path, closed, options["stroke_segment_min_length"])
+    -- prune zero-length segments
+    vecutils.prune_small_lines_xy(path, closed, options["stroke_segment_min_length"])
 
     -- generate joins
     generate_joins(path)
@@ -250,7 +195,7 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
             if math.abs(cross) > stroke_join_discard_threshold then
                 if line_join == "miter" then
                     -- miter length (length between the intersections of the outer-lines)
-                    local miter_len = half_width / math.cos(vec_angle(-p.dx1, -p.dy1, p.dx2, p.dy2) / 2)
+                    local miter_len = half_width / math.cos(vecutils.vec_angle(-p.dx1, -p.dy1, p.dx2, p.dy2) / 2)
 
                     -- ratio that can't exceed the miter_limit
                     local ratio = miter_len / half_width
@@ -283,8 +228,8 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                         b_y = -p.dx2
                     end
 
-                    local start_angle = vec_angle(a_x, a_y, 1, 0)
-                    local dtheta = vec_angle(a_x, a_y, b_x, b_y)
+                    local start_angle = vecutils.vec_angle(a_x, a_y, 1, 0)
+                    local dtheta = vecutils.vec_angle(a_x, a_y, b_x, b_y)
 
                     -- add every point of the arc
                     for i = 0, stroke_arc_segments do
@@ -334,7 +279,7 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                 local side = (p.next == nil) and 0 or 1
 
                 -- similar to round joins
-                local start_angle = vec_angle(-p.dy, p.dx, 1, 0)
+                local start_angle = vecutils.vec_angle(-p.dy, p.dx, 1, 0)
 
                 -- add every point of the arc
                 for i = 0, stroke_arc_segments do

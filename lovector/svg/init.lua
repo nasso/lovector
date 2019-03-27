@@ -30,6 +30,7 @@ local DEFAULT_OPTIONS = {
     ["debug"] = false;
     ["path_debug"] = false;
     ["stroke_debug"] = false;
+    ["love_lines"] = false;
 }
 
 local SVG = {}

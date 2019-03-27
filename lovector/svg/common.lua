@@ -24,6 +24,7 @@ SOFTWARE.
 
 local cwd = (...):match('(.*lovector).-$') .. "."
 local stroke = require(cwd .. "stroke")
+local vecutils = require(cwd .. "vecutils")
 local ELEMENTS = require(cwd .. "svg.renderer")
 
 local COLOR_NAMES = {
@@ -218,7 +219,6 @@ function common.get_attr(element, attrname, default)
     return element:get_attribute(attrname, INHERIT[attrname], default)
 end
 
--- parse a color definition, returning the RGBA components in the 0..1 range
 function common.color_parse(str, default_r, default_g, default_b, default_a)
     if str == nil then
             return default_r, default_g, default_b, default_a
@@ -481,43 +481,64 @@ function common.gen_subpath(svg, element, vertices, closed, options)
 
     -- stroke
     if s_red ~= nil and #vertices >= 4 then
-        -- stroke the path
-        local stroke_slices = stroke.gen_strips(vertices, closed, stroke_width, stroke_linecap, stroke_linejoin, stroke_miterlimit, options)
+        if options["love_lines"] then
+            local bufferid = svg:put_data(vecutils.prune_small_lines(vertices, closed, 1/1000))
 
-        if stroke_slices ~= nil then
-            -- put each slice on the stencil
-            for i = 1, #stroke_slices do
-                -- clear the stencil only if we're at the first slice
-                -- also, use "triangle strip" as the draw mode
-                result = result .. common.gen_shape_stencil(svg, stroke_slices[i], nil, i == 1, "strip")
+            result = result .. "love.graphics.setLineWidth(" .. stroke_width .. ")\n"
+
+            local fn_draw_lines = ""
+
+            if closed == true then
+                fn_draw_lines = "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
+            else
+                fn_draw_lines = "love.graphics.line(" .. bufferid .. ")\n"
             end
 
-            -- paint everything!!!!!
+            result = result .. ([[
+                love.graphics.stencil({fn_draw_lines}, "replace", 0xFF)
+            ]])
+            :gsub("{fn_draw_lines}", svg:put_function(fn_draw_lines))
+
             result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
+        else
+            -- stroke the path
+            local stroke_slices = stroke.gen_strips(vertices, closed, stroke_width, stroke_linecap, stroke_linejoin, stroke_miterlimit, options)
 
-            if options["stroke_debug"] then
-                local debug_code = nil
-
-                if options["stroke_debug"] == "wireframe" then
-                    debug_code = [[
-                        love.graphics.setColor({r}, {g}, {b}, 0.5)
-                        love.graphics.setLineJoin('none')
-                        love.graphics.setLineWidth(0.01)
-                        love.graphics.line({vertices})
-                    ]]
-                else
-                    debug_code = [[
-                        love.graphics.setColor({r}, {g}, {b}, 0.5)
-                        love.graphics.setPointSize(5)
-                        love.graphics.points({vertices})
-                    ]]
+            if stroke_slices ~= nil then
+                -- put each slice on the stencil
+                for i = 1, #stroke_slices do
+                    -- clear the stencil only if we're at the first slice
+                    -- also, use "triangle strip" as the draw mode
+                    result = result .. common.gen_shape_stencil(svg, stroke_slices[i], nil, i == 1, "strip")
                 end
 
-                for i = 1, #stroke_slices do
-                    local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
-                    result = result .. debug_code
-                    :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
-                    :gsub("{vertices}", svg:put_data(stroke_slices[i]))
+                -- paint everything!!!!!
+                result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
+
+                if options["stroke_debug"] then
+                    local debug_code = nil
+
+                    if options["stroke_debug"] == "wireframe" then
+                        debug_code = [[
+                            love.graphics.setColor({r}, {g}, {b}, 0.5)
+                            love.graphics.setLineJoin('none')
+                            love.graphics.setLineWidth(0.01)
+                            love.graphics.line({vertices})
+                        ]]
+                    else
+                        debug_code = [[
+                            love.graphics.setColor({r}, {g}, {b}, 0.5)
+                            love.graphics.setPointSize(5)
+                            love.graphics.points({vertices})
+                        ]]
+                    end
+
+                    for i = 1, #stroke_slices do
+                        local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
+                        result = result .. debug_code
+                        :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
+                        :gsub("{vertices}", svg:put_data(stroke_slices[i]))
+                    end
                 end
             end
         end
