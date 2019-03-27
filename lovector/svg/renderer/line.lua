@@ -37,7 +37,7 @@ function renderer:empty(svg, options)
         return ""
     end
 
-    return common.gen_subpath(svg, self, {}, false, options)
+    return common.gen_subpath(svg, self, { x1, y1, x2, y2 }, false, options)
 end
 
 return renderer
