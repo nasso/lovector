@@ -228,6 +228,8 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
 
     local p = path[1]
 
+    local stroke_join_discard_threshold = options["stroke_join_discard_threshold"]
+
     repeat
         if p.join == true then
             local cross = p.dx1 * p.dy2 - p.dx2 * p.dy1
@@ -241,7 +243,7 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
             table.insert(vertices, p.y + p.dx1 * half_width)
 
             -- only proceed if the angle difference is big enough
-            if math.abs(cross) > options["stroke_join_discard_threshold"] then
+            if math.abs(cross) > stroke_join_discard_threshold then
                 if linejoin == "miter" then
                     -- "outer" vertices (those on the bigger side of the angle) are...
                     local a_x = 0
@@ -285,12 +287,24 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
                 table.insert(vertices, p.y - p.dx2 * half_width)
             end
         elseif p.cap == true then
-            -- ~~fluffy~~ butt
-            table.insert(vertices, p.x - p.dy * half_width)
-            table.insert(vertices, p.y + p.dx * half_width)
+            -- "butt" line cap
+            if linecap == "butt" then
+                table.insert(vertices, p.x - p.dy * half_width)
+                table.insert(vertices, p.y + p.dx * half_width)
 
-            table.insert(vertices, p.x + p.dy * half_width)
-            table.insert(vertices, p.y - p.dx * half_width)
+                table.insert(vertices, p.x + p.dy * half_width)
+                table.insert(vertices, p.y - p.dx * half_width)
+
+            -- "square" line cap
+            elseif linecap == "square" then
+                local side = (p.next == nil) and 1 or -1
+
+                table.insert(vertices, p.x + (p.dx * side - p.dy) * half_width)
+                table.insert(vertices, p.y + (p.dy * side + p.dx) * half_width)
+
+                table.insert(vertices, p.x + (p.dx * side + p.dy) * half_width)
+                table.insert(vertices, p.y + (p.dy * side - p.dx) * half_width)
+            end
         end
 
         p = p.next
