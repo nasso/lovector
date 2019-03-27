@@ -190,7 +190,7 @@ local function generate_caps(path)
     last.dx, last.dy = get_direction(last.previous, last)
 end
 
-local function stroke(path, closed, width, linecap, linejoin, miterlimit, options)
+local function stroke(path, closed, width, line_cap, line_join, miter_limit, options)
     -- a single point or less gives no line
     if #path <= 2 then
         return nil
@@ -244,35 +244,14 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
 
             -- only proceed if the angle difference is big enough
             if math.abs(cross) > stroke_join_discard_threshold then
-                if linejoin == "miter" then
-                    -- "outer" vertices (those on the bigger side of the angle) are...
-                    local a_x = 0
-                    local a_y = 0
-                    local b_x = 0
-                    local b_y = 0
-
-                    -- ...either on one side...
-                    if cross > 0 then
-                        a_x = p.x + p.dy1 * half_width
-                        a_y = p.y - p.dx1 * half_width
-
-                        b_x = p.x - p.dy2 * half_width
-                        b_y = p.y + p.dx2 * half_width
-
-                    -- ...or the other
-                    else
-                        a_x = p.x - p.dy1 * half_width
-                        a_y = p.y + p.dx1 * half_width
-
-                        b_x = p.x + p.dy2 * half_width
-                        b_y = p.y - p.dx2 * half_width
-                    end
-
+                if line_join == "miter" then
+                    -- miter length (length between the intersections of the outer-lines)
                     local miter_len = half_width / math.cos(vec_angle(-p.dx1, -p.dy1, p.dx2, p.dy2) / 2)
 
+                    -- ratio that can't exceed the miter_limit
                     local ratio = miter_len / half_width
 
-                    if ratio < miterlimit then
+                    if ratio < miter_limit then
                         table.insert(vertices, p.x - p.bx * miter_len)
                         table.insert(vertices, p.y - p.by * miter_len)
                     end
@@ -288,7 +267,7 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
             end
         elseif p.cap == true then
             -- "butt" line cap
-            if linecap == "butt" then
+            if line_cap == "butt" then
                 table.insert(vertices, p.x - p.dy * half_width)
                 table.insert(vertices, p.y + p.dx * half_width)
 
@@ -296,7 +275,7 @@ local function stroke(path, closed, width, linecap, linejoin, miterlimit, option
                 table.insert(vertices, p.y - p.dx * half_width)
 
             -- "square" line cap
-            elseif linecap == "square" then
+            elseif line_cap == "square" then
                 local side = (p.next == nil) and 1 or -1
 
                 table.insert(vertices, p.x + (p.dx * side - p.dy) * half_width)
