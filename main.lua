@@ -97,7 +97,7 @@ function love.draw()
 	love.graphics.translate(-cameraX, -cameraY)
 
 	pics[1]:draw(0, 0, 10)
-	pics[2]:draw(550, 100, 0.5)
+	pics[2]:draw(900, 150, 0.5)
 
 	love.graphics.pop()
 end

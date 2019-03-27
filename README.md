@@ -55,8 +55,11 @@ Here's a summary table of what lövector does and doesn't support for now:
 | Linear Gradients    | :x:                |
 | Radial Gradients    | :x:                |
 | Line Dashes         | :x:                |
-| Line Joins          | :x:                |
-| Line Caps           | :x:                |
+| Line Joins          | :heavy_check_mark: |
+| Line Caps           | :heavy_check_mark: |
+
+_Note: This table is for the SVG 1.1 specification. Some SVG 2 features (such as
+"arcs" joins) might not be implemented yet._
 
 ### SVG
 

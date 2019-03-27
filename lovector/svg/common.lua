@@ -23,6 +23,8 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
+local stroke = require(cwd .. "stroke")
+local vecutils = require(cwd .. "vecutils")
 local ELEMENTS = require(cwd .. "svg.renderer")
 
 local COLOR_NAMES = {
@@ -217,7 +219,6 @@ function common.get_attr(element, attrname, default)
     return element:get_attribute(attrname, INHERIT[attrname], default)
 end
 
--- parse a color definition, returning the RGBA components in the 0..1 range
 function common.color_parse(str, default_r, default_g, default_b, default_a)
     if str == nil then
             return default_r, default_g, default_b, default_a
@@ -372,67 +373,22 @@ function common.transform_parse(svg, transform)
     return result
 end
 
-function common.euclidian_distance_squared(x1, y1, x2, y2)
-    local dx = x2 - x1
-    local dy = y2 - y1
-    return dx * dx + dy * dy
-end
-
-function common.remove_doubles(vertices, epsilon)
-    if #vertices < 2 or #vertices % 2 ~= 0 then
-        error("the vertex array must have length greater or equal than 2, and be even")
-        return nil
-    end
-
-    -- default epsilon to 0
-    epsilon = epsilon or 0
-
-    -- square epsilon so that we don't have to take the sqrt of distances
-    epsilon = epsilon * epsilon
-
-    -- where we're going to store vertices
-    local clean_vertices = {}
-
-    -- add at least 1
-    table.insert(clean_vertices, vertices[1])
-    table.insert(clean_vertices, vertices[2])
-
-    -- add all the others
-    for i = 3, #vertices, 2 do
-        if
-            -- check distance between this point and the previous one
-            common.euclidian_distance_squared(
-                vertices[i], vertices[i + 1],
-                vertices[i - 2], vertices[i - 1]
-            ) > epsilon
-
-            and
-
-            -- check distance between last and first points
-            ((i ~= #vertices - 1) or
-                common.euclidian_distance_squared(
-                    vertices[i], vertices[i + 1],
-                    vertices[1], vertices[2]
-                ) > epsilon
-            )
-        then
-            table.insert(clean_vertices, vertices[i])
-            table.insert(clean_vertices, vertices[i + 1])
+function common.gen_shape_stencil(svg, vertices, fill_rule, clear_stencil, draw_mode)
+    if #vertices <= 4 then
+        if clear_stencil == true then
+            return "love.graphics.clear(false, true, false)\n"
         end
+
+        return ""
     end
 
-    -- return the array
-    return clean_vertices
-end
-
-function common.gen_shape_stencil(svg, vertices, fill_rule)
     local vertices_pairs = {}
     for i = 1, #vertices, 2 do
         table.insert(vertices_pairs, { vertices[i], vertices[i+1] })
     end
 
     -- create the Mesh
-    local mesh = love.graphics.newMesh(SHAPE_MESH_VERTEX_FORMAT, vertices_pairs, "fan", "static")
+    local mesh = love.graphics.newMesh(SHAPE_MESH_VERTEX_FORMAT, vertices_pairs, draw_mode or "fan", "static")
 
     -- output
     local result = nil
@@ -441,7 +397,7 @@ function common.gen_shape_stencil(svg, vertices, fill_rule)
         -- nonzero stencil
         result = [[
             love.graphics.setMeshCullMode("front")
-            love.graphics.stencil({fn_draw_mesh}, "incrementwrap")
+            love.graphics.stencil({fn_draw_mesh}, "incrementwrap", 0, not {clear_stencil})
 
             love.graphics.setMeshCullMode("back")
             love.graphics.stencil({fn_draw_mesh}, "decrementwrap", 0, true)
@@ -450,17 +406,19 @@ function common.gen_shape_stencil(svg, vertices, fill_rule)
         -- evenodd stencil
         result = [[
             love.graphics.setMeshCullMode("none")
-            love.graphics.stencil({fn_draw_mesh}, "invert")
+            love.graphics.stencil({fn_draw_mesh}, "invert", 0, not {clear_stencil})
         ]]
     else
         -- default stencil
         result = [[
             love.graphics.setMeshCullMode("none")
-            love.graphics.stencil({fn_draw_mesh}, "replace", 0xFF)
+            love.graphics.stencil({fn_draw_mesh}, "replace", 0xFF, not {clear_stencil})
         ]]
     end
 
-    return result:gsub("{fn_draw_mesh}", svg:put_function("love.graphics.draw(" .. svg:put_data(mesh) .. ")"))
+    return result
+    :gsub("{fn_draw_mesh}", svg:put_function("love.graphics.draw(" .. svg:put_data(mesh) .. ")"))
+    :gsub("{clear_stencil}", tostring(clear_stencil ~= false))
 end
 
 function common.gen_paint_on_stencil(r, g, b, a)
@@ -495,14 +453,17 @@ function common.gen_subpath(svg, element, vertices, closed, options)
 
     -- opacity
     local opacity = tonumber(common.get_attr(element, "opacity", "1"), 10)
-    local f_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"), 10)
-    local s_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"), 10)
 
-    -- line width
-    local linewidth = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
-
-    -- fill rule
+    -- fill properties
+    local fill_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"), 10)
     local fill_rule = common.get_attr(element, "fill-rule", "nonzero")
+
+    -- stroke properties
+    local stroke_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"), 10)
+    local stroke_width = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
+    local stroke_linecap = common.get_attr(element, "stroke-linecap", "butt")
+    local stroke_linejoin = common.get_attr(element, "stroke-linejoin", "miter")
+    local stroke_miterlimit = tonumber(common.get_attr(element, "stroke-miterlimit", "4"), 10)
 
     -- check if we're even going to draw anything
     if f_red == nil and s_red == nil then
@@ -515,28 +476,96 @@ function common.gen_subpath(svg, element, vertices, closed, options)
     if f_red ~= nil and #vertices >= 6 then
         result = result ..
             common.gen_shape_stencil(svg, vertices, fill_rule) ..
-            common.gen_paint_on_stencil(f_red, f_green, f_blue, f_alpha * f_opacity * opacity)
+            common.gen_paint_on_stencil(f_red, f_green, f_blue, f_alpha * fill_opacity * opacity)
     end
 
     -- stroke
     if s_red ~= nil and #vertices >= 4 then
-        local bufferid = svg:put_data(common.remove_doubles(vertices, 1/1000))
+        if options["love_lines"] then
+            local bufferid = svg:put_data(vecutils.prune_small_lines(vertices, closed, 1/1000))
 
-        result = result .. "love.graphics.setColor(" .. s_red .. ", " .. s_green .. ", " .. s_blue .. ", " .. (s_alpha * s_opacity * opacity) .. ")\n"
-        result = result .. "love.graphics.setLineWidth(" .. linewidth .. ")\n"
+            result = result .. "love.graphics.setLineWidth(" .. stroke_width .. ")\n"
 
-        if closed == true then
-            result = result .. "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
+            local fn_draw_lines = ""
+
+            if closed == true then
+                fn_draw_lines = "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
+            else
+                fn_draw_lines = "love.graphics.line(" .. bufferid .. ")\n"
+            end
+
+            result = result .. ([[
+                love.graphics.stencil({fn_draw_lines}, "replace", 0xFF)
+            ]])
+            :gsub("{fn_draw_lines}", svg:put_function(fn_draw_lines))
+
+            result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
         else
-            result = result .. "love.graphics.line(" .. bufferid .. ")\n"
+            -- stroke the path
+            local stroke_slices = stroke.gen_strips(vertices, closed, stroke_width, stroke_linecap, stroke_linejoin, stroke_miterlimit, options)
+
+            if stroke_slices ~= nil then
+                -- put each slice on the stencil
+                for i = 1, #stroke_slices do
+                    -- clear the stencil only if we're at the first slice
+                    -- also, use "triangle strip" as the draw mode
+                    result = result .. common.gen_shape_stencil(svg, stroke_slices[i], nil, i == 1, "strip")
+                end
+
+                -- paint everything!!!!!
+                result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
+
+                if options["stroke_debug"] then
+                    local debug_code = nil
+
+                    if options["stroke_debug"] == "wireframe" then
+                        debug_code = [[
+                            love.graphics.setColor({r}, {g}, {b}, 0.5)
+                            love.graphics.setLineJoin('none')
+                            love.graphics.setLineWidth(0.01)
+                            love.graphics.line({vertices})
+                        ]]
+                    else
+                        debug_code = [[
+                            love.graphics.setColor({r}, {g}, {b}, 0.5)
+                            love.graphics.setPointSize(5)
+                            love.graphics.points({vertices})
+                        ]]
+                    end
+
+                    for i = 1, #stroke_slices do
+                        local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
+                        result = result .. debug_code
+                        :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
+                        :gsub("{vertices}", svg:put_data(stroke_slices[i]))
+                    end
+                end
+            end
         end
     end
 
     if options["path_debug"] then
+        local debug_code = nil
+
+        if options["path_debug"] == "wireframe" then
+            debug_code = [[
+                love.graphics.setColor({r}, {g}, {b}, 0.5)
+                love.graphics.setLineJoin('none')
+                love.graphics.setLineWidth(0.01)
+                love.graphics.line({vertices})
+            ]]
+        else
+            debug_code = [[
+                love.graphics.setColor({r}, {g}, {b}, 0.5)
+                love.graphics.setPointSize(5)
+                love.graphics.points({vertices})
+            ]]
+        end
+
         local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
-        result = result .. "love.graphics.setColor(" .. r .. ", " .. g .. ", " .. b .. ", 0.5)\n"
-        result = result .. "love.graphics.setPointSize(5)\n"
-        result = result .. "love.graphics.points(" .. svg:put_data(vertices) .. ")\n"
+        result = result .. debug_code
+        :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
+        :gsub("{vertices}", svg:put_data(vertices))
     end
 
     return result
