@@ -90,7 +90,10 @@ function love.draw()
 
 	love.graphics.pop()
 
-	love.graphics.setColor(0, 0, 0, 1)
+	love.graphics.setColor(0, 0, 0, 0.5)
+	love.graphics.rectangle("fill", 0, 0, 160, 160)
+
+	love.graphics.setColor(1, 1, 1, 1)
 
 	local stats = love.graphics.getStats()
 	love.graphics.print(tostring(love.timer.getFPS()) .. " FPS | " .. tostring(math.floor(love.timer.getDelta() * 100000) / 100) .. " ms", 10, 10)
