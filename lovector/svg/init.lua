@@ -99,31 +99,22 @@ function SVG:draw(x, y, sx, sy)
     if sx == nil then sx = 1  end
     if sy == nil then sy = sx end
 
-    -- a viewport width/height of 0 disables drawing
-    if self.viewport == nil or (self.viewport.width ~= 0 and self.viewport.height ~= 0) then
-        -- push graphics settings
-        love.graphics.push()
+    -- push graphics settings
+    love.graphics.push()
 
-        -- position
-        love.graphics.translate(x or 0, y or 0)
+    -- position
+    love.graphics.translate(x or 0, y or 0)
 
-        -- scale
-        if sx ~= nil then
-            love.graphics.scale(sx, sy)
-        end
-
-        -- SVG viewBox handling
-        if self.viewport ~= nil then
-            love.graphics.translate(-self.viewport.minx, -self.viewport.miny)
-            love.graphics.scale(self.width / self.viewport.width, self.height / self.viewport.height)
-        end
-
-        -- draw
-        self.script(self.extdata)
-
-        -- reset graphics
-        love.graphics.pop()
+    -- scale
+    if sx ~= nil then
+        love.graphics.scale(sx, sy)
     end
+
+    -- draw
+    self.script(self.extdata)
+
+    -- reset graphics
+    love.graphics.pop()
 end
 
 function SVG:release()

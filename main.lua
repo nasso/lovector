@@ -48,18 +48,7 @@ function love.load()
 	love.graphics.setBackgroundColor(1, 1, 1)
 
 	-- <path> demo
-	pics[1] = lovector.SVG("demo_files/path.svg", {
-		--  - That's the default value for bezier_depth:
-		-- bezier_depth = 5;
-
-		--  - Faster, but less accurate, enabling this option
-		--      will use LOVE2D's filling function to fill polygons.
-		--      The default is false, and will use the 'evenodd' rule.
-		--      'evenodd' isn't the default according to the SVG
-		--      specification, it should be 'nonzero' but this feature
-		--      isn't implemented yet; this might cause incorrect results.
-		-- use_love_fill = true;
-	})
+	pics[1] = lovector.SVG("demo_files/path.svg")
 
 	-- tiggie!
 	pics[2] = lovector.SVG("demo_files/ghostscript-tiger.svg")
@@ -96,10 +85,21 @@ function love.draw()
 	love.graphics.translate(-w/2, -h/2)
 	love.graphics.translate(-cameraX, -cameraY)
 
-	pics[1]:draw(0, 0, 10)
-	pics[2]:draw(900, 150, 0.5)
+	pics[1]:draw(0, 0)
+	pics[2]:draw(800, 50, 400)
 
 	love.graphics.pop()
+
+	love.graphics.setColor(0, 0, 0, 1)
+
+	local stats = love.graphics.getStats()
+	love.graphics.print(tostring(love.timer.getFPS()) .. " FPS | " .. tostring(math.floor(love.timer.getDelta() * 100000) / 100) .. " ms", 10, 10)
+	love.graphics.print("Draw calls: " .. tostring(stats.drawcalls), 10, 30)
+	love.graphics.print("Canvas switches: " .. tostring(stats.canvasswitches), 10, 50)
+	love.graphics.print("Texture memory: " .. tostring(stats.texturememory) .. " B", 10, 70)
+	love.graphics.print("Images: " .. tostring(stats.images), 10, 90)
+	love.graphics.print("Canvases: " .. tostring(stats.canvases), 10, 110)
+	love.graphics.print("Fonts: " .. tostring(stats.fonts), 10, 130)
 end
 
 function love.keypressed(k)

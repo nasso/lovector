@@ -95,8 +95,8 @@ local DEFAULT_OPTIONS = {
     ["bezier_depth"] = 5;
 }
 
-function PathBuilder.mt.__call(options)
-    options = options or {}
+function PathBuilder.mt.__call(_, options)
+    options = options or DEFAULT_OPTIONS
 
     for k, v in pairs(DEFAULT_OPTIONS) do
         if options[k] == nil then

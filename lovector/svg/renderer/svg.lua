@@ -28,44 +28,13 @@ local common = require(cwd .. "svg.common")
 local renderer = {}
 
 function renderer:open(svg, options)
-    local width = common.get_attr(self, "width")
-    local height = common.get_attr(self, "height")
-    local viewBox = common.get_attr(self, "viewBox")
-
-    if width ~= nil then
-        width = tonumber(width, 10)
-    end
-
-    if height ~= nil then
-        height = tonumber(height, 10)
-    end
-
-    if viewBox ~= nil then
-        local next_num = string.gmatch(viewBox, "%-?[^%s,%-]+")
-
-        viewBox = {
-            minx = next_num();
-            miny = next_num();
-            width = next_num();
-            height = next_num();
-        }
-
-        -- 100%
-        if width == nil then
-            width = viewBox.width
-        end
-
-        -- 100%
-        if height == nil then
-            height = viewBox.height
-        end
-    end
-
     -- The top level SVG element sets some properties in the svg object
     if self.parent == nil then
+        local width = tonumber(common.get_attr(self, "width", "1"), 10)
+        local height = tonumber(common.get_attr(self, "height", "1"), 10)
+
         svg.width = width
         svg.height = height
-        svg.viewBox = viewBox
     end
 
     return ""

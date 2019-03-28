@@ -609,6 +609,9 @@ function common.gen(svg, element, options)
 
         -- Transform attribute
         local transform = common.get_attr(content, "transform")
+        local view_box = common.get_attr(content, "viewBox")
+        local width = tonumber(common.get_attr(content, "width", "1"), 10)
+        local height = tonumber(common.get_attr(content, "height", "1"), 10)
 
         -- Empty elements
         if content.children == nil then
@@ -647,11 +650,32 @@ function common.gen(svg, element, options)
 
         -- If the content is (finally) a string
         if type(content) == "string" then
-            -- Apply eventual transform so that everyone doesn't have to do it themselves
-            if transform ~= nil then
+
+            if transform ~= nil or view_box ~= nil then
+                local operations = ""
+
+                -- Apply eventual transform so that everyone doesn't have to do it themselves
+                if transform ~= nil then
+                    operations = operations .. common.transform_parse(svg, transform)
+                end
+
+                if view_box ~= nil then
+                    -- get each value
+                    local next_num = string.gmatch(view_box, "%-?[^%s,%-]+")
+
+                    operations = operations .. ([[
+                        love.graphics.translate({minx}, {miny})
+                        love.graphics.scale({sx}, {sy})
+                    ]])
+                    :gsub("{minx}", tostring(next_num()))
+                    :gsub("{miny}", tostring(next_num()))
+                    :gsub("{sx}", tostring(width / next_num()))
+                    :gsub("{sy}", tostring(height / next_num()))
+                end
+
                 content =
                     "love.graphics.push()\n" ..
-                    common.transform_parse(svg, transform) ..
+                    operations ..
                     content ..
                     "love.graphics.pop()\n"
             end
