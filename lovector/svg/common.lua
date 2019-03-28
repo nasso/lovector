@@ -346,8 +346,8 @@ function common.transform_parse(svg, transform)
 
             local matrix = love.math.newTransform()
             matrix:setMatrix(
-                a, c, e, 0,
-                b, d, f, 0,
+                a, c, 0, e,
+                b, d, 0, f,
                 0, 0, 1, 0,
                 0, 0, 0, 1
             )
