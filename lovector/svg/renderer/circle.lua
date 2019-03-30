@@ -33,16 +33,14 @@ function renderer:empty(svg, options)
     local cy = tonumber(common.get_attr(self, "cy", "0"), 10)
     local r = tonumber(common.get_attr(self, "r", "0"), 10)
 
-    if r <= 0 then
-        return ""
+    if r > 0 then
+        local path = PathBuilder(options)
+
+        path:arc(cx, cy, r, 0, 360)
+        path:close_path()
+
+        svg.graphics:draw_path(path)
     end
-
-    local path = PathBuilder(options)
-
-    path:arc(cx, cy, r, 0, 360)
-    path:close_path()
-
-    return common.gen_path(svg, self, path, options)
 end
 
 return renderer

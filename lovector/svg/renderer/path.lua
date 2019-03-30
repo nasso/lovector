@@ -303,7 +303,7 @@ function renderer:empty(svg, options)
     end
 
     -- render everything!
-    return common.gen_path(svg, self, path, options)
+    svg.graphics:draw_path(path)
 end
 
 return renderer

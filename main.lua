@@ -27,16 +27,17 @@ local lovector = require "lovector"
 local oldmousex = nil
 local oldmousey = nil
 
-local cameraX = -720
-local cameraY = -250
+local cameraX = 100
+local cameraY = -100
 local cameraXVel = 0
 local cameraYVel = 0
-local cameraZoomTarget = 1
-local cameraZoom = 1
+local cameraZoomTarget = 0.8
+local cameraZoom = cameraZoomTarget
 
-local pics = {}
+local graphics = {}
 
 function love.load()
+	-- Windo settings
 	love.window.setMode(1280, 960, {
 		minheight = 30;
 		minwidth = 400;
@@ -47,14 +48,40 @@ function love.load()
 
 	love.graphics.setBackgroundColor(1, 1, 1)
 
-	-- <path> demo
-	pics[1] = lovector.SVG("demo_files/path.svg")
+	--- Basic demo
+	-- Create a path
+	local path = lovector.PathBuilder()
+
+	-- Use <canvas>-like methods
+	path:move_to(0, 0)
+	path:line_to(100, 100)
+	path:line_to(100, 0)
+
+	-- Create a vector graphics image with "Graphics"
+	-- It dynamically generates a LÖVE draw function we can use later
+	-- Most methods return "self", so you can chain them
+	graphics[1] = lovector.Graphics()
+		-- Fill the path in red
+		:set_fill_paint(lovector.paint.Color(1, 0, 0, 1))
+		:fill_path(path)
+
+		-- Stroke the path in blue
+		:set_stroke_paint(lovector.paint.Color(0, 0, 1, 1))
+		:set_line_joins("round")
+		:set_line_caps("round")
+		:set_line_width(5)
+		:stroke_path(path)
+
+	--- SVG loading demo
+	-- (it just returns a "Graphics")
+	graphics[2] = lovector.SVG("demo_files/path.svg")
 
 	-- tiggie!
-	pics[2] = lovector.SVG("demo_files/ghostscript-tiger.svg")
+	graphics[3] = lovector.SVG("demo_files/ghostscript-tiger.svg")
 end
 
 function love.update(dt)
+	-- Cool, juicy camera control
 	cameraZoom = cameraZoom + (cameraZoomTarget - cameraZoom) * 10 * dt
 
 	local mousex, mousey = love.mouse.getPosition()
@@ -79,22 +106,28 @@ end
 function love.draw()
 	local w, h = love.graphics.getDimensions()
 
+	-- Move to camera space
 	love.graphics.push()
 	love.graphics.translate(w/2, h/2)
 	love.graphics.scale(cameraZoom)
 	love.graphics.translate(-w/2, -h/2)
 	love.graphics.translate(-cameraX, -cameraY)
 
-	pics[1]:draw(0, 0)
-	pics[2]:draw(800, 50, 400)
+	-- Draw all our graphics!
+	graphics[1]:draw()
+	graphics[2]:draw(200, 0)
+	graphics[3]:draw(1000, 50, 400)
 
+	-- Get out of the camera
 	love.graphics.pop()
 
+	-- Display debug info
 	love.graphics.setColor(0, 0, 0, 0.5)
 	love.graphics.rectangle("fill", 0, 0, 160, 160)
 
 	love.graphics.setColor(1, 1, 1, 1)
 
+	-- Stats
 	local stats = love.graphics.getStats()
 	love.graphics.print(tostring(love.timer.getFPS()) .. " FPS | " .. tostring(math.floor(love.timer.getDelta() * 100000) / 100) .. " ms", 10, 10)
 	love.graphics.print("Draw calls: " .. tostring(stats.drawcalls), 10, 30)
@@ -106,11 +139,13 @@ function love.draw()
 end
 
 function love.keypressed(k)
+	-- Quit on escape
 	if k == "escape" then
 		love.event.quit()
 	end
 end
 
 function love.wheelmoved(x, y)
+	-- Zoom control with the wheel
 	cameraZoomTarget = math.max(cameraZoomTarget * (y < 0 and 0.9 or 1.1), 0.1)
 end

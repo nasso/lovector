@@ -30,30 +30,20 @@ local renderer = {}
 function renderer:empty(svg, options)
     local points = common.get_attr(self, "points")
 
-    if points == nil then
-        return ""
+    if points ~= nil then
+        -- vertice lists
+        local vertices = {}
+
+        -- get all the coordinates
+        for n in points:gmatch("[%-%+]?[^%s,%-%+]+") do
+            table.insert(vertices, n)
+        end
+
+        -- there must be an even number of coordinates
+        if #vertices % 2 == 0 then
+            svg.graphics:draw_vertices(vertices, self.name == "polygon")
+        end
     end
-
-    -- vertice lists
-    local vertices = {}
-
-    -- get all the coordinates
-    for n in points:gmatch("[%-%+]?[^%s,%-%+]+") do
-        table.insert(vertices, n)
-    end
-
-    -- there must be an even number of coordinates
-    if #vertices % 2 ~= 0 then
-        return ""
-    end
-
-    return common.gen_subpath(
-        svg,
-        self,
-        vertices,
-        self.name == "polygon", -- closed if it's a polygon
-        options
-    )
 end
 
 return renderer

@@ -25,7 +25,7 @@ SOFTWARE.
 local renderer = {}
 
 function renderer:open(svg, options)
-    return "", nil, false
+    return false
 end
 
 return renderer

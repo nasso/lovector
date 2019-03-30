@@ -22,17 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-local cwd = (...):match('(.*lovector).-$') .. "."
+local paint = {}
 
-local lovector = {}
+function paint.Color(r, g, b, a)
+    return {
+        type = "color";
+        r = r;
+        g = g;
+        b = b;
+        a = a;
+    }
+end
 
-lovector.paint = require(cwd .. "paint")
-lovector.Graphics = require(cwd .. "graphics")
-lovector.PathBuilder = require(cwd .. "pathbuilder")
-lovector.stroke = require(cwd .. "stroke")
-
-lovector.vecutils = require(cwd .. "vecutils")
-
-lovector.SVG = require(cwd .. "svg")
-
-return lovector
+return paint

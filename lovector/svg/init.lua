@@ -23,6 +23,7 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
+local Graphics = require(cwd .. "graphics")
 local DOM = require(cwd .. "svg.dom")
 local common = require(cwd .. "svg.common")
 
@@ -30,19 +31,12 @@ local DEFAULT_OPTIONS = {
     ["debug"] = false;
     ["path_debug"] = false;
     ["stroke_debug"] = false;
-    ["love_lines"] = false;
 }
 
-local SVG = {}
-SVG.__index = SVG
-
-SVG.mt = {}
-SVG.mt.__index = SVG.mt
-setmetatable(SVG, SVG.mt)
-
-function SVG.mt.__call(_, svg, options)
+--- Creates a Graphics from the given SVG file
+local function SVG(source, options)
     -- Arg check
-    assert(type(svg) == "string", "\"svg\" should be a string, but is " .. type(svg))
+    assert(type(source) == "string", "\"source\" should be a string, but is " .. type(source))
 
     options = options or {}
 
@@ -52,79 +46,27 @@ function SVG.mt.__call(_, svg, options)
         end
     end
 
-    -- if the svg argument is a path, load it
-    if not svg:match("<?xml") then
-        local contents, err = love.filesystem.read(svg)
+    -- if the source argument is a path, load it
+    if not source:match("<?xml") then
+        local contents, err = love.filesystem.read(source)
 
         if contents == nil then
             error(err)
         end
 
-        svg = contents
+        source = contents
     end
 
-    -- SVG object
-    svg = {
-        document = DOM.Document(svg);
+    local svg = {
+        document = DOM.Document(source);
         width = 0;
         height = 0;
-        extdata = {};
-        script = 'local extdata = ...\n';
+        graphics = Graphics(options);
     }
 
-    -- set the metatable now so that we can use it when parsing the SVG
-    setmetatable(svg, SVG)
+    common.gen(svg, svg.document.root, options)
 
-    -- Parse SVG
-    svg.script = svg.script .. common.gen(svg, svg.document.root, options)
-
-    -- Create draw_function
-    svg.script = assert(loadstring(svg.script))
-
-    return svg
-end
-
-function SVG:put_function(source)
-    return self:put_data(assert(loadstring("local extdata = ...\nreturn function()\n" .. source .. "\nend\n"))(self.extdata))
-end
-
-function SVG:put_data(data)
-    table.insert(self.extdata, data)
-    return "extdata[" .. #(self.extdata) .. "]"
-end
-
-function SVG:draw(x, y, sx, sy)
-    if x  == nil then x  = 0  end
-    if y  == nil then y  = 0  end
-    if sx == nil then sx = 1  end
-    if sy == nil then sy = sx end
-
-    -- push graphics settings
-    love.graphics.push()
-
-    -- position
-    love.graphics.translate(x or 0, y or 0)
-
-    -- scale
-    if sx ~= nil then
-        love.graphics.scale(sx, sy)
-    end
-
-    -- draw
-    self.script(self.extdata)
-
-    -- reset graphics
-    love.graphics.pop()
-end
-
-function SVG:release()
-    for i = 1, #(self.extdata) do
-        local data = self.extdata[i]
-
-        if type(data.release) == "function" then
-            data:release()
-        end
-    end
+    return svg.graphics
 end
 
 return SVG

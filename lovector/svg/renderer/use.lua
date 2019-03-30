@@ -95,10 +95,8 @@ function renderer:empty(svg, options)
     -- add the cloned element
     g:append_child(href)
 
-    -- return the element
-    -- that will effectively replace this element with it
-    -- it will be rendered with its own renderer
-    return g
+    -- render the element
+    common.gen(svg, g, options)
 end
 
 return renderer

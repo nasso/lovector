@@ -22,6 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
+local PathBuilder = {}
+PathBuilder.__index = PathBuilder
+
+PathBuilder.mt = {}
+PathBuilder.mt.__index = PathBuilder.mt
+setmetatable(PathBuilder, PathBuilder.mt)
+
+-- constants
+local DEFAULT_OPTIONS = {
+    ["arc_segments"] = 50;
+    ["bezier_depth"] = 5;
+}
+
+-- private functions
 local function vec_angle(ux, uy, vx, vy)
     -- this function assumes u and v have a length of 1
     local cross = ux * vy - uy * vx
@@ -83,39 +97,30 @@ local function endpoint_to_center(x1, y1, x2, y2, fa, fs, rx, ry, phi)
     return cx, cy, theta1, dtheta
 end
 
-local PathBuilder = {}
-PathBuilder.__index = PathBuilder
-
-PathBuilder.mt = {}
-PathBuilder.mt.__index = PathBuilder.mt
-setmetatable(PathBuilder, PathBuilder.mt)
-
-local DEFAULT_OPTIONS = {
-    ["arc_segments"] = 50;
-    ["bezier_depth"] = 5;
-}
-
-function PathBuilder.mt.__call(_, options)
-    options = options or DEFAULT_OPTIONS
-
-    for k, v in pairs(DEFAULT_OPTIONS) do
-        if options[k] == nil then
-            options[k] = v
-        end
-    end
-
+-- constructor
+function PathBuilder.mt.__call(_, ...)
     local self = setmetatable({}, PathBuilder)
-    self.options = options
 
-    self:clear()
+    self:init(...)
 
     return self
 end
 
-function PathBuilder:clear()
+-- methods
+function PathBuilder:init(options)
+    self.options = options or {}
+
+    for k, v in pairs(DEFAULT_OPTIONS) do
+        if self.options[k] == nil then
+            self.options[k] = v
+        end
+    end
+
     self.subpaths = {}
     self.current_subpath = nil
     self.stroke_shape = nil
+
+    return self
 end
 
 function PathBuilder:last_point()

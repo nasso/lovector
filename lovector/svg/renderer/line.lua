@@ -33,11 +33,9 @@ function renderer:empty(svg, options)
     local x2 = tonumber(common.get_attr(self, "x2", "0"), 10)
     local y2 = tonumber(common.get_attr(self, "y2", "0"), 10)
 
-    if x1 == x2 and y1 == y2 then
-        return ""
+    if x1 ~= x2 or y1 ~= y2 then
+        svg.graphics:draw_vertices({ x1, y1, x2, y2 }, false)
     end
-
-    return common.gen_subpath(svg, self, { x1, y1, x2, y2 }, false, options)
 end
 
 return renderer

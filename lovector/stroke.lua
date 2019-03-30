@@ -23,6 +23,7 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
+local PathBuilder = require(cwd .. "pathbuilder")
 local vecutils = require(cwd .. "vecutils")
 
 local stroke = {}
@@ -172,7 +173,7 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
     -- vertice list
     local half_width = width / 2
 
-    local vertices = {}
+    local vertices = PathBuilder(options)
 
     local p = path[1]
 
@@ -185,11 +186,8 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
 
             -- first perpendicular segment of the join
             -- the one that's "coming" from the previous line
-            table.insert(vertices, p.x + p.dy1 * half_width)
-            table.insert(vertices, p.y - p.dx1 * half_width)
-
-            table.insert(vertices, p.x - p.dy1 * half_width)
-            table.insert(vertices, p.y + p.dx1 * half_width)
+            vertices:line_to(p.x + p.dy1 * half_width, p.y - p.dx1 * half_width)
+            vertices:line_to(p.x - p.dy1 * half_width, p.y + p.dx1 * half_width)
 
             -- only proceed if the angle difference is big enough
             if math.abs(cross) > stroke_join_discard_threshold then
@@ -201,8 +199,7 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                     local ratio = miter_len / half_width
 
                     if ratio < miter_limit then
-                        table.insert(vertices, p.x - p.bx * miter_len)
-                        table.insert(vertices, p.y - p.by * miter_len)
+                        vertices:line_to(p.x - p.bx * miter_len, p.y - p.by * miter_len)
                     end
                 elseif line_join == "round" then
                     -- "outer" vertices (those on the bigger side of the angle) are...
@@ -237,42 +234,31 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                         local cos_theta = math.cos(theta)
                         local sin_theta = math.sin(theta)
 
-                        table.insert(vertices, p.x + cos_theta * half_width)
-                        table.insert(vertices, p.y - sin_theta * half_width)
+                        vertices:line_to(p.x + cos_theta * half_width, p.y - sin_theta * half_width)
 
                         if i ~= stroke_arc_segments then
-                            table.insert(vertices, p.x)
-                            table.insert(vertices, p.y)
+                            vertices:line_to(p.x, p.y)
                         end
                     end
                 end
 
                 -- second perpendicular segment of the join
                 -- the one that's "going out" to the next line
-                table.insert(vertices, p.x - p.dy2 * half_width)
-                table.insert(vertices, p.y + p.dx2 * half_width)
-
-                table.insert(vertices, p.x + p.dy2 * half_width)
-                table.insert(vertices, p.y - p.dx2 * half_width)
+                vertices:line_to(p.x - p.dy2 * half_width, p.y + p.dx2 * half_width)
+                vertices:line_to(p.x + p.dy2 * half_width, p.y - p.dx2 * half_width)
             end
         elseif p.cap == true then
             -- "butt" line cap
             if line_cap == "butt" then
-                table.insert(vertices, p.x - p.dy * half_width)
-                table.insert(vertices, p.y + p.dx * half_width)
-
-                table.insert(vertices, p.x + p.dy * half_width)
-                table.insert(vertices, p.y - p.dx * half_width)
+                vertices:line_to(p.x - p.dy * half_width, p.y + p.dx * half_width)
+                vertices:line_to(p.x + p.dy * half_width, p.y - p.dx * half_width)
 
             -- "square" line cap
             elseif line_cap == "square" then
                 local side = (p.next == nil) and 1 or -1
 
-                table.insert(vertices, p.x + (p.dx * side - p.dy) * half_width)
-                table.insert(vertices, p.y + (p.dy * side + p.dx) * half_width)
-
-                table.insert(vertices, p.x + (p.dx * side + p.dy) * half_width)
-                table.insert(vertices, p.y + (p.dy * side - p.dx) * half_width)
+                vertices:line_to(p.x + (p.dx * side - p.dy) * half_width, p.y + (p.dy * side + p.dx) * half_width)
+                vertices:line_to(p.x + (p.dx * side + p.dy) * half_width, p.y + (p.dy * side - p.dx) * half_width)
 
             -- "round" line cap
             elseif line_cap == "round" then
@@ -288,11 +274,8 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                     local theta = start_angle - math.pi * 0.5 * per
                     local phi = start_angle - math.pi * (1.0 - 0.5 * per)
 
-                    table.insert(vertices, p.x - math.cos(phi) * half_width)
-                    table.insert(vertices, p.y + math.sin(phi) * half_width)
-
-                    table.insert(vertices, p.x - math.cos(theta) * half_width)
-                    table.insert(vertices, p.y + math.sin(theta) * half_width)
+                    vertices:line_to(p.x - math.cos(phi) * half_width, p.y + math.sin(phi) * half_width)
+                    vertices:line_to(p.x - math.cos(theta) * half_width, p.y + math.sin(theta) * half_width)
                 end
             end
         end
@@ -302,15 +285,11 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
 
     -- close the shape
     if closed then
-        table.insert(vertices, p.x + p.dy1 * half_width)
-        table.insert(vertices, p.y - p.dx1 * half_width)
-
-        table.insert(vertices, p.x - p.dy1 * half_width)
-        table.insert(vertices, p.y + p.dx1 * half_width)
+        vertices:line_to(p.x + p.dy1 * half_width, p.y - p.dx1 * half_width)
+        vertices:line_to(p.x - p.dy1 * half_width, p.y + p.dx1 * half_width)
     end
 
-    -- since there's no support for dashes yet, return a single slice
-    return { vertices }
+    return vertices
 end
 
 return stroke

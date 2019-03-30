@@ -23,8 +23,8 @@ SOFTWARE.
 ]]
 
 local cwd = (...):match('(.*lovector).-$') .. "."
-local stroke = require(cwd .. "stroke")
-local vecutils = require(cwd .. "vecutils")
+local paint = require(cwd .. "paint")
+-- local vecutils = require(cwd .. "vecutils")
 local ELEMENTS = require(cwd .. "svg.renderer")
 
 local COLOR_NAMES = {
@@ -287,403 +287,181 @@ function common.color_parse(str, default_r, default_g, default_b, default_a)
     end
 end
 
-function common.transform_parse(svg, transform)
-    local result = ""
+function common.apply_transform(svg, element)
+    local transform = common.get_attr(element, "transform")
+
+    if transform == nil then
+        return
+    end
 
     -- parse every command
-    for cmd, strargs in string.gmatch(transform, "%s*(.-)%s*%((.-)%)") do
-        local args = {}
+    for cmd, strargs in transform:gmatch("%s*(.-)%s*%((.-)%)") do
+        if strargs ~= nil then
+            local next_num = strargs:gmatch("%-?[^%s,%-]+")
 
-        -- parse command arguments
-        if strargs ~= nil and #strargs > 0 then
-            for arg in string.gmatch(strargs, "%-?[^%s,%-]+") do
-               table.insert(args, 1, tonumber(arg, 10))
-            end
-        end
+            -- translate
+            if cmd == "translate" then
+                svg.graphics:translate(
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10)
+                )
 
-        -- translate
-        if cmd == "translate" then
-            local x = table.remove(args)
-            local y = table.remove(args) or 0
+            -- rotate
+            elseif cmd == "rotate" then
+                svg.graphics:rotate(
+                    math.rad(tonumber(next_num(), 10)),
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10)
+                )
 
-            result = result .. "love.graphics.translate(" .. x .. ", " .. y .. ")\n"
+            -- scale
+            elseif cmd == "scale" then
+                svg.graphics:scale(
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10)
+                )
 
-        -- rotate
-        elseif cmd == "rotate" then
-            local a = table.remove(args)
-            local x = table.remove(args) or 0
-            local y = table.remove(args) or 0
+            -- matrix
+            elseif cmd == "matrix" then
+                svg.graphics:apply_transform(
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10),
+                    tonumber(next_num(), 10)
+                )
 
-            if x ~= 0 and y ~= 0 then
-                result = result .. "love.graphics.translate(" .. x .. ", " .. y .. ")\n"
-            end
+            elseif cmd == "skewX" then
+                svg.graphics:shear(math.rad(tonumber(next_num(), 10)), 0)
 
-            result = result .. "love.graphics.rotate(" .. math.rad(a) .. ")\n"
+            elseif cmd == "skewY" then
+                svg.graphics:shear(0, math.rad(tonumber(next_num(), 10)))
 
-            if x ~= 0 and y ~= 0 then
-                result = result .. "love.graphics.translate(" .. (-x) .. ", " .. (-y) .. ")\n"
-            end
-
-        -- scale
-        elseif cmd == "scale" then
-            local x = table.remove(args)
-            local y = table.remove(args)
-
-            if y == nil then
-                y = x
-            end
-
-            result = result .. "love.graphics.scale(" .. x .. ", " .. y .. ")\n"
-
-        -- matrix
-        elseif cmd == "matrix" then
-            local a = table.remove(args)
-            local b = table.remove(args)
-            local c = table.remove(args)
-            local d = table.remove(args)
-            local e = table.remove(args)
-            local f = table.remove(args)
-
-            local matrix = love.math.newTransform()
-            matrix:setMatrix(
-                a, c, 0, e,
-                b, d, 0, f,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            )
-
-            result = result .. "love.graphics.applyTransform(" .. svg:put_data(matrix) .. ")\n"
-        elseif cmd == "skewX" then
-            local a = table.remove(args)
-
-            result = result .. "love.graphics.shear(" .. math.rad(a) .. ", 0)\n"
-
-        elseif cmd == "skewY" then
-            local a = table.remove(args)
-
-            result = result .. "love.graphics.shear(0, " .. math.rad(a) .. ")\n"
-
-        else
-            -- let em know what's missing!!!
-            print("Unimplemented transform command: " .. cmd .. "!")
-            os.exit()
-        end
-    end
-
-    return result
-end
-
-function common.gen_shape_stencil(svg, vertices, fill_rule, clear_stencil, draw_mode)
-    if #vertices <= 4 then
-        if clear_stencil == true then
-            return "love.graphics.clear(false, true, false)\n"
-        end
-
-        return ""
-    end
-
-    local vertices_pairs = {}
-    for i = 1, #vertices, 2 do
-        table.insert(vertices_pairs, { vertices[i], vertices[i+1] })
-    end
-
-    -- create the Mesh
-    local mesh = love.graphics.newMesh(SHAPE_MESH_VERTEX_FORMAT, vertices_pairs, draw_mode or "fan", "static")
-
-    -- output
-    local result = nil
-
-    if fill_rule == "nonzero" then
-        -- nonzero stencil
-        result = [[
-            love.graphics.setMeshCullMode("front")
-            love.graphics.stencil({fn_draw_mesh}, "incrementwrap", 0, not {clear_stencil})
-
-            love.graphics.setMeshCullMode("back")
-            love.graphics.stencil({fn_draw_mesh}, "decrementwrap", 0, true)
-        ]]
-    elseif fill_rule == "evenodd" then
-        -- evenodd stencil
-        result = [[
-            love.graphics.setMeshCullMode("none")
-            love.graphics.stencil({fn_draw_mesh}, "invert", 0, not {clear_stencil})
-        ]]
-    else
-        -- default stencil
-        result = [[
-            love.graphics.setMeshCullMode("none")
-            love.graphics.stencil({fn_draw_mesh}, "replace", 0xFF, not {clear_stencil})
-        ]]
-    end
-
-    return result
-    :gsub("{fn_draw_mesh}", svg:put_function("love.graphics.draw(" .. svg:put_data(mesh) .. ")"))
-    :gsub("{clear_stencil}", tostring(clear_stencil ~= false))
-end
-
-function common.gen_paint_on_stencil(r, g, b, a)
-    return ([[
-        love.graphics.setStencilTest("notequal", 0)
-
-        love.graphics.push()
-        love.graphics.origin()
-        love.graphics.setColor({r}, {g}, {b}, {a})
-        love.graphics.rectangle("fill", 0, 0, love.graphics.getDimensions())
-        love.graphics.pop()
-
-        love.graphics.setStencilTest()
-    ]])
-    :gsub("{r}", r)
-    :gsub("{g}", g)
-    :gsub("{b}", b)
-    :gsub("{a}", a)
-end
-
-function common.gen_subpath(svg, element, vertices, closed, options)
-    -- not enough vertices
-    if #vertices < 4 then
-        return ""
-    end
-
-    -- attributes!
-
-    --  colors (red/green/blue)
-    local f_red, f_green, f_blue, f_alpha = common.color_parse(common.get_attr(element, "fill", "black"))
-    local s_red, s_green, s_blue, s_alpha = common.color_parse(common.get_attr(element, "stroke", "none"))
-
-    -- opacity
-    local opacity = tonumber(common.get_attr(element, "opacity", "1"), 10)
-
-    -- fill properties
-    local fill_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"), 10)
-    local fill_rule = common.get_attr(element, "fill-rule", "nonzero")
-
-    -- stroke properties
-    local stroke_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"), 10)
-    local stroke_width = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
-    local stroke_linecap = common.get_attr(element, "stroke-linecap", "butt")
-    local stroke_linejoin = common.get_attr(element, "stroke-linejoin", "miter")
-    local stroke_miterlimit = tonumber(common.get_attr(element, "stroke-miterlimit", "4"), 10)
-
-    -- check if we're even going to draw anything
-    if f_red == nil and s_red == nil then
-        return ""
-    end
-
-    local result = ""
-
-    -- fill
-    if f_red ~= nil and #vertices >= 6 then
-        result = result ..
-            common.gen_shape_stencil(svg, vertices, fill_rule) ..
-            common.gen_paint_on_stencil(f_red, f_green, f_blue, f_alpha * fill_opacity * opacity)
-    end
-
-    -- stroke
-    if s_red ~= nil and #vertices >= 4 then
-        if options["love_lines"] then
-            local bufferid = svg:put_data(vecutils.prune_small_lines(vertices, closed, 1/1000))
-
-            result = result .. "love.graphics.setLineWidth(" .. stroke_width .. ")\n"
-
-            local fn_draw_lines = ""
-
-            if closed == true then
-                fn_draw_lines = "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
             else
-                fn_draw_lines = "love.graphics.line(" .. bufferid .. ")\n"
-            end
-
-            result = result .. ([[
-                love.graphics.stencil({fn_draw_lines}, "replace", 0xFF)
-            ]])
-            :gsub("{fn_draw_lines}", svg:put_function(fn_draw_lines))
-
-            result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
-        else
-            -- stroke the path
-            local stroke_slices = stroke.gen_strips(vertices, closed, stroke_width, stroke_linecap, stroke_linejoin, stroke_miterlimit, options)
-
-            if stroke_slices ~= nil then
-                -- put each slice on the stencil
-                for i = 1, #stroke_slices do
-                    -- clear the stencil only if we're at the first slice
-                    -- also, use "triangle strip" as the draw mode
-                    result = result .. common.gen_shape_stencil(svg, stroke_slices[i], nil, i == 1, "strip")
-                end
-
-                -- paint everything!!!!!
-                result = result .. common.gen_paint_on_stencil(s_red, s_green, s_blue, s_alpha * stroke_opacity * opacity)
-
-                if options["stroke_debug"] then
-                    local debug_code = nil
-
-                    if options["stroke_debug"] == "wireframe" then
-                        debug_code = [[
-                            love.graphics.setColor({r}, {g}, {b}, 0.5)
-                            love.graphics.setLineJoin('none')
-                            love.graphics.setLineWidth(0.01)
-                            love.graphics.line({vertices})
-                        ]]
-                    else
-                        debug_code = [[
-                            love.graphics.setColor({r}, {g}, {b}, 0.5)
-                            love.graphics.setPointSize(5)
-                            love.graphics.points({vertices})
-                        ]]
-                    end
-
-                    for i = 1, #stroke_slices do
-                        local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
-                        result = result .. debug_code
-                        :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
-                        :gsub("{vertices}", svg:put_data(stroke_slices[i]))
-                    end
-                end
+                -- let em know what's missing!!!
+                print("Unimplemented transform command: " .. cmd .. "!")
+                os.exit()
             end
         end
     end
-
-    if options["path_debug"] then
-        local debug_code = nil
-
-        if options["path_debug"] == "wireframe" then
-            debug_code = [[
-                love.graphics.setColor({r}, {g}, {b}, 0.5)
-                love.graphics.setLineJoin('none')
-                love.graphics.setLineWidth(0.01)
-                love.graphics.line({vertices})
-            ]]
-        else
-            debug_code = [[
-                love.graphics.setColor({r}, {g}, {b}, 0.5)
-                love.graphics.setPointSize(5)
-                love.graphics.points({vertices})
-            ]]
-        end
-
-        local r,g,b = common.hsla_to_rgba(math.random(), 1, 0.5)
-        result = result .. debug_code
-        :gsub("{r}", r):gsub("{g}", g):gsub("{b}", b)
-        :gsub("{vertices}", svg:put_data(vertices))
-    end
-
-    return result
 end
 
-function common.gen_path(svg, element, path, options)
-    local result = ""
+function common.apply_viewbox(svg, element)
+    local view_box = common.get_attr(element, "viewBox")
 
-    for i = 1, #(path.subpaths) do
-        local sub = path.subpaths[i]
-
-        result = result .. common.gen_subpath(svg, element, sub.vertices, sub.closed, options)
+    if view_box == nil then
+        return
     end
 
-    return result
+    local width = tonumber(common.get_attr(element, "width", "1"), 10)
+    local height = tonumber(common.get_attr(element, "height", "1"), 10)
+
+    -- get each value
+    local next_num = view_box:gmatch("%-?[^%s,%-]+")
+
+    svg.graphics
+        :translate(tonumber(next_num(), 10), tonumber(next_num(), 10))
+        :scale(width / tonumber(next_num(), 10), height / tonumber(next_num(), 10))
+end
+
+function common.apply_fill_properties(svg, element)
+    local r, g, b, a = common.color_parse(common.get_attr(element, "fill", "black"))
+
+    if r then
+        local opacity = tonumber(common.get_attr(element, "opacity", "1"), 10)
+        local fill_opacity = tonumber(common.get_attr(element, "fill-opacity", "1"), 10)
+        local fill_rule = common.get_attr(element, "fill-rule", "nonzero")
+
+        svg.graphics
+            :set_fill_paint(paint.Color(r, g, b, a * opacity * fill_opacity))
+            :set_fill_rule(fill_rule)
+    else
+        svg.graphics:set_fill_paint(nil)
+    end
+end
+
+function common.apply_stroke_properties(svg, element)
+    local r, g, b, a = common.color_parse(common.get_attr(element, "stroke", "none"))
+
+    if r then
+        local opacity = tonumber(common.get_attr(element, "opacity", "1"), 10)
+        local stroke_opacity = tonumber(common.get_attr(element, "stroke-opacity", "1"), 10)
+        local stroke_width = tonumber(common.get_attr(element, "stroke-width", "1"), 10)
+        local stroke_linecap = common.get_attr(element, "stroke-linecap", "butt")
+        local stroke_linejoin = common.get_attr(element, "stroke-linejoin", "miter")
+        local stroke_miterlimit = tonumber(common.get_attr(element, "stroke-miterlimit", "4"), 10)
+
+        svg.graphics
+            :set_stroke_paint(paint.Color(r, g, b, a * opacity * stroke_opacity))
+            :set_line_width(stroke_width)
+            :set_line_caps(stroke_linecap)
+            :set_line_joins(stroke_linejoin)
+            :set_miter_limit(stroke_miterlimit)
+    else
+        svg.graphics:set_stroke_paint(nil)
+    end
 end
 
 function common.gen(svg, element, options)
-    local content = element
+    local renderer = ELEMENTS[element.name]
 
-    while true do
-        local renderer = ELEMENTS[content.name]
-
-        -- No renderer for this element
-        if renderer == nil then
-            if options.debug then
-                print("No renderer for <" .. content.name .. ">")
-            end
-
-            return ""
+    -- No renderer for this element
+    if renderer == nil then
+        if options["debug"] then
+            print("No renderer for <" .. element.name .. ">")
         end
 
-        if renderer == "" then
-            renderer = nil
+        return ""
+    end
+
+    if renderer == "" then
+        renderer = nil
+    end
+
+    -- Load the renderer, if any
+    if renderer ~= nil then
+        renderer = require(cwd .. "svg.renderer." .. ELEMENTS[element.name])
+    end
+
+    -- Push state for this element
+    svg.graphics:push()
+
+    -- Apply common stuff so that everyone doesn't have to do it
+    common.apply_transform(svg, element)
+    common.apply_viewbox(svg, element)
+    common.apply_fill_properties(svg, element)
+    common.apply_stroke_properties(svg, element)
+
+    -- Empty elements
+    if element.children == nil then
+        if renderer ~= nil and renderer.empty ~= nil then
+            renderer.empty(element, svg, options)
         end
 
-        -- Load the renderer, if any
-        if renderer ~= nil then
-            renderer = require(cwd .. "svg.renderer." .. ELEMENTS[content.name])
+    -- Containers
+    else
+        local state = nil
+        local include_children = true
+
+        if renderer ~= nil and renderer.open ~= nil then
+            include_children, state = renderer.open(element, svg, options)
+
+            include_children = include_children ~= false
         end
 
-        -- Transform attribute
-        local transform = common.get_attr(content, "transform")
-        local view_box = common.get_attr(content, "viewBox")
-        local width = tonumber(common.get_attr(content, "width", "1"), 10)
-        local height = tonumber(common.get_attr(content, "height", "1"), 10)
-
-        -- Empty elements
-        if content.children == nil then
-            if renderer == nil or renderer.empty == nil then
-                return ""
+        if include_children then
+            for i = 1, #(element.children) do
+                common.gen(svg, element.children[i], options)
             end
-
-            content = renderer.empty(content, svg, options)
-
-        -- Containers
-        else
-            local result = nil
-            local state = nil
-            local include_children = true
-
-            if renderer ~= nil and renderer.open ~= nil then
-                result, state, include_children = renderer.open(content, svg, options)
-
-                include_children = include_children ~= false
-            else
-                result = ""
-            end
-
-            if include_children then
-                for i = 1, #(content.children) do
-                    result = result .. common.gen(svg, content.children[i], options)
-                end
-            end
-
-            if renderer ~= nil and renderer.close ~= nil then
-                result = result .. renderer.close(content, state, svg, options)
-            end
-
-            content = result
         end
 
-        -- If the content is (finally) a string
-        if type(content) == "string" then
-
-            if transform ~= nil or view_box ~= nil then
-                local operations = ""
-
-                -- Apply eventual transform so that everyone doesn't have to do it themselves
-                if transform ~= nil then
-                    operations = operations .. common.transform_parse(svg, transform)
-                end
-
-                if view_box ~= nil then
-                    -- get each value
-                    local next_num = string.gmatch(view_box, "%-?[^%s,%-]+")
-
-                    operations = operations .. ([[
-                        love.graphics.translate({minx}, {miny})
-                        love.graphics.scale({sx}, {sy})
-                    ]])
-                    :gsub("{minx}", tostring(next_num()))
-                    :gsub("{miny}", tostring(next_num()))
-                    :gsub("{sx}", tostring(width / next_num()))
-                    :gsub("{sy}", tostring(height / next_num()))
-                end
-
-                content =
-                    "love.graphics.push()\n" ..
-                    operations ..
-                    content ..
-                    "love.graphics.pop()\n"
-            end
-
-            -- Leave!
-            return content
+        if renderer ~= nil and renderer.close ~= nil then
+            renderer.close(element, state, svg, options)
         end
     end
+
+    svg.graphics:pop()
 end
 
 return common

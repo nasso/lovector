@@ -90,7 +90,7 @@ function renderer:empty(svg, options)
 
     path:close_path()
 
-    return common.gen_path(svg, self, path, options)
+    svg.graphics:draw_path(path)
 end
 
 return renderer

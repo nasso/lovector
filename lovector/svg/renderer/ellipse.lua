@@ -34,16 +34,14 @@ function renderer:empty(svg, options)
     local rx = tonumber(common.get_attr(self, "rx", "0"), 10)
     local ry = tonumber(common.get_attr(self, "ry", "0"), 10)
 
-    if rx <= 0 or ry <= 0 then
-        return ""
+    if rx > 0 and ry > 0 then
+        local path = PathBuilder(options)
+
+        path:elliptical_arc(cx, cy, rx, ry, 0, 360)
+        path:close_path()
+
+        svg.graphics:draw_path(path)
     end
-
-    local path = PathBuilder(options)
-
-    path:elliptical_arc(cx, cy, rx, ry, 0, 360)
-    path:close_path()
-
-    return common.gen_path(svg, self, path, options)
 end
 
 return renderer

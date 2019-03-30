@@ -36,8 +36,6 @@ function renderer:open(svg, options)
         svg.width = width
         svg.height = height
     end
-
-    return ""
 end
 
 return renderer
