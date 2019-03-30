@@ -50,16 +50,16 @@ function love.load()
 
 	--- Basic demo
 	-- Create a path
+	-- Most methods return "self", so you can chain method calls
 	local path = lovector.PathBuilder()
-
-	-- Use <canvas>-like methods
-	path:move_to(0, 0)
-	path:line_to(100, 100)
-	path:line_to(100, 0)
+		-- Use <canvas>-like methods
+		:move_to(0, 0)
+		:line_to(100, 100)
+		:line_to(100, 0)
 
 	-- Create a vector graphics image with "Graphics"
 	-- It dynamically generates a LÖVE draw function we can use later
-	-- Most methods return "self", so you can chain them
+	-- Most methods return "self"
 	graphics[1] = lovector.Graphics()
 		-- Fill the path in red
 		:set_fill_paint(lovector.paint.Color(1, 0, 0, 1))

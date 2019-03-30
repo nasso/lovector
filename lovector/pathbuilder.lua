@@ -141,6 +141,8 @@ function PathBuilder:ensure_sub_path(x, y)
     if #(self.subpaths) == 0 then
         self:move_to(x, y)
     end
+
+    return self
 end
 
 function PathBuilder:move_to(x, y)
@@ -150,6 +152,8 @@ function PathBuilder:move_to(x, y)
     }
 
     table.insert(self.subpaths, self.current_subpath)
+
+    return self
 end
 
 function PathBuilder:close_path()
@@ -160,6 +164,8 @@ function PathBuilder:close_path()
             self:move_to(self.current_subpath.vertices[1], self.current_subpath.vertices[2])
         end
     end
+
+    return self
 end
 
 function PathBuilder:line_to(x, y)
@@ -169,6 +175,8 @@ function PathBuilder:line_to(x, y)
         table.insert(self.current_subpath.vertices, x)
         table.insert(self.current_subpath.vertices, y)
     end
+
+    return self
 end
 
 function PathBuilder:quadratic_curve_to(cpx, cpy, x, y)
@@ -189,6 +197,8 @@ function PathBuilder:quadratic_curve_to(cpx, cpy, x, y)
 
     -- release object
     curve:release()
+
+    return self
 end
 
 function PathBuilder:bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
@@ -210,6 +220,8 @@ function PathBuilder:bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
 
     -- release object
     curve:release()
+
+    return self
 end
 
 function PathBuilder:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
@@ -224,14 +236,14 @@ function PathBuilder:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
 
     -- same points
     if sx == x and sy == y then
-        return
+        return self
     end
 
     -- zero radii
     if rx == 0 or ry == 0 then
         table.insert(self.current_subpath.vertices, x)
         table.insert(self.current_subpath.vertices, y)
-        return
+        return self
     end
 
     -- negative radii
@@ -261,10 +273,12 @@ function PathBuilder:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
     local cx, cy, theta1, dtheta = endpoint_to_center(sx, sy, x, y, fa, fs, rx, ry, phi)
 
     self:elliptical_arc(cx, cy, rx, ry, theta1, theta1 + dtheta, dtheta < 0, phi)
+
+    return self
 end
 
 function PathBuilder:arc(x, y, radius, start_angle, end_angle, counterclockwise)
-    self:elliptical_arc(x, y, radius, radius, start_angle, end_angle, counterclockwise, rotation)
+    return self:elliptical_arc(x, y, radius, radius, start_angle, end_angle, counterclockwise, rotation)
 end
 
 function PathBuilder:elliptical_arc(cx, cy, rx, ry, start_angle, end_angle, counterclockwise, rotation)
@@ -303,6 +317,8 @@ function PathBuilder:elliptical_arc(cx, cy, rx, ry, start_angle, end_angle, coun
         table.insert(self.current_subpath.vertices, cos_phi * rx * cos_theta - sin_phi * ry * sin_theta + cx)
         table.insert(self.current_subpath.vertices, sin_phi * rx * cos_theta + cos_phi * ry * sin_theta + cy)
     end
+
+    return self
 end
 
 return PathBuilder
