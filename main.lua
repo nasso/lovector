@@ -53,10 +53,7 @@ function love.load()
 	-- Most methods return "self", so you can chain method calls
 	local house_path = lovector.PathBuilder()
 		-- wall
-		:move_to(75, 140)
-		:line_to(225, 140)
-		:line_to(225, 250)
-		:line_to(75, 250)
+		:rect(75, 140, 150, 110)
 		:close_path()
 
 		-- Roof

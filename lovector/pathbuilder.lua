@@ -179,6 +179,17 @@ function PathBuilder:line_to(x, y)
     return self
 end
 
+function PathBuilder:rect(x, y, w, h)
+    self:move_to(x, y)
+    self:line_to(x + w, y)
+    self:line_to(x + w, y + h)
+    self:line_to(x, y + h)
+    self:close_path()
+    self:move_to(x, y)
+
+    return self
+end
+
 function PathBuilder:quadratic_curve_to(cpx, cpy, x, y)
     self:ensure_sub_path(cpx, cpy)
 
