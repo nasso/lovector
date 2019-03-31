@@ -15,37 +15,34 @@ local tiggie = nil
 
 -- You first create the vector graphics images once:
 function love.load()
-    --- Example: Build a house by hand
+    --- Example: Build a path
     -- Create a path
     -- Most methods return "self", so you can chain method calls
-    local house_path = lovector.PathBuilder()
-        -- wall
-        :rect(75, 140, 150, 110)
-        :close_path()
-
-        -- Roof
+    local roof_path = lovector.PathBuilder()
         :move_to(50, 140)
         :line_to(150, 60)
         :line_to(250, 140)
         :close_path()
 
-    local door_path = lovector.PathBuilder()
-        :move_to(130, 190)
-        :line_to(170, 190)
-        :line_to(170, 250)
-        :line_to(130, 250)
-        :close_path()
-
+    --- Example: Build a house
     -- Create a vector graphics image with "Graphics"
     -- It dynamically generates a LÖVE draw function we can use later
     -- Most methods return "self"
     house = lovector.Graphics()
-        -- Stroke the house path (wall + roof)
+        -- Set line width
         :set_line_width(10)
-        :stroke_path(house_path)
 
-        -- Fill the door
-        :fill_path(door_path)
+        -- Wall
+        :rect(75, 140, 150, 110)
+        :stroke_path()
+
+        -- Door
+        :begin_path()
+        :rect(130, 190, 40, 60)
+        :fill_path()
+
+        -- You can also use a manually created Path!
+        :stroke_path(roof_path)
 
     --- Example: Load an SVG
     -- It just does all the work for you, but it's a lovector.Graphics too!

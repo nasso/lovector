@@ -56,18 +56,21 @@ function Graphics.mt.__call(_, ...)
 end
 
 -- private methods
---- Adds an arbitrary value to `self.extdata`
+--- Adds an arbitrary value to `self.extdata`.
 local function put_data(self, data)
     table.insert(self.extdata, data)
     return "extdata[" .. #(self.extdata) .. "]"
 end
 
---- Creates a function with the given source code, and adds it to `self.extdata`
+--- Creates a function with the given source code, and adds it to `self.extdata`.
 local function put_function(self, source)
-    return put_data(self, assert(loadstring("local extdata = ...\nreturn function()\n" .. source .. "\nend\n"))(self.extdata))
+    return put_data(
+        self,
+        assert(loadstring("local extdata = ...\nreturn function()\n" .. source .. "\nend\n"))(self.extdata)
+    )
 end
 
---- Draws a shape on the stencil buffer
+--- Draws a shape on the stencil buffer.
 local function stencil_mask(self, vertices, clear_stencil)
     assert(vertices)
 
@@ -125,7 +128,7 @@ local function stencil_mask(self, vertices, clear_stencil)
     return self
 end
 
---- Draws a fullscreen rectangle with the given paint, with a stencil test "~= 0"
+--- Draws a fullscreen rectangle with the given paint, with a stencil test "~= 0".
 local function apply_paint(self, paint)
     if paint.type == "color" then
         self.script = self.script .. ([[
@@ -149,7 +152,7 @@ local function apply_paint(self, paint)
 end
 
 -- methods
---- Initializes this Graphics object, as if it was just created
+--- Initializes this Graphics object, as if it was just created.
 function Graphics:init(options)
     self:release()
 
@@ -165,6 +168,8 @@ function Graphics:init(options)
     self.extdata = {}
     self.options = options
 
+    self.current_path = nil
+
     self.state_stack = {}
     self.state = {
         fill_paint = paint.Color(0, 0, 0, 1);
@@ -176,10 +181,12 @@ function Graphics:init(options)
         stroke_paint = paint.Color(0, 0, 0, 1);
     }
 
+    self:begin_path()
+
     return self
 end
 
---- Releases every resource associated with this Graphics object
+--- Releases every resource associated with this Graphics object.
 function Graphics:release()
     if type(self.extdata) == "table" then
         for i = 1, #(self.extdata) do
@@ -201,66 +208,9 @@ function Graphics:release()
     self.state = nil
 end
 
---- Sets self.state.fill_paint
-function Graphics:set_fill_paint(value)
-    self.state.fill_paint = value
+--- State
 
-    return self
-end
-
---- Sets self.state.fill_rule
-function Graphics:set_fill_rule(value)
-    assert(value)
-
-    self.state.fill_rule = value
-
-    return self
-end
-
---- Sets self.state.line_caps
-function Graphics:set_line_caps(value)
-    assert(value)
-
-    self.state.line_caps = value
-
-    return self
-end
-
---- Sets self.state.line_joins
-function Graphics:set_line_joins(value)
-    assert(value)
-
-    self.state.line_joins = value
-
-    return self
-end
-
---- Sets self.state.line_width
-function Graphics:set_line_width(value)
-    assert(value)
-
-    self.state.line_width = value
-
-    return self
-end
-
---- Sets self.state.miter_limit
-function Graphics:set_miter_limit(value)
-    assert(value)
-
-    self.state.miter_limit = value
-
-    return self
-end
-
---- Sets self.state.stroke_paint
-function Graphics:set_stroke_paint(value)
-    self.state.stroke_paint = value
-
-    return self
-end
-
---- Pushes the state
+--- Pushes the state.
 function Graphics:push()
     -- push the state to the stack
     table.insert(self.state_stack, self.state)
@@ -280,7 +230,7 @@ function Graphics:push()
     return self
 end
 
---- Pops the state
+--- Pops the state.
 function Graphics:pop()
     -- pop
     self.state = table.remove(self.state_stack)
@@ -291,7 +241,68 @@ function Graphics:pop()
     return self
 end
 
---- Translates the coordinate system
+--- Sets `self.state.fill_paint`.
+function Graphics:set_fill_paint(value)
+    self.state.fill_paint = value
+
+    return self
+end
+
+--- Sets `self.state.fill_rule`.
+function Graphics:set_fill_rule(value)
+    assert(value)
+
+    self.state.fill_rule = value
+
+    return self
+end
+
+--- Sets `self.state.line_caps`.
+function Graphics:set_line_caps(value)
+    assert(value)
+
+    self.state.line_caps = value
+
+    return self
+end
+
+--- Sets `self.state.line_joins`.
+function Graphics:set_line_joins(value)
+    assert(value)
+
+    self.state.line_joins = value
+
+    return self
+end
+
+--- Sets `self.state.line_width`.
+function Graphics:set_line_width(value)
+    assert(value)
+
+    self.state.line_width = value
+
+    return self
+end
+
+--- Sets `self.state.miter_limit`.
+function Graphics:set_miter_limit(value)
+    assert(value)
+
+    self.state.miter_limit = value
+
+    return self
+end
+
+--- Sets `self.state.stroke_paint`.
+function Graphics:set_stroke_paint(value)
+    self.state.stroke_paint = value
+
+    return self
+end
+
+--- Transformations
+
+--- Translates the coordinate system.
 function Graphics:translate(x, y)
     assert(x)
     assert(y)
@@ -321,7 +332,7 @@ function Graphics:rotate(a, x, y)
     return self
 end
 
---- Scales the coordinate system
+--- Scales the coordinate system.
 function Graphics:scale(x, y)
     assert(x)
 
@@ -332,7 +343,7 @@ function Graphics:scale(x, y)
     return self
 end
 
---- Applies the matrix to the coordinate system
+--- Applies the matrix to the coordinate system.
 function Graphics:apply_transform(a, b, c, d, e, f)
     assert(a)
     assert(b)
@@ -364,7 +375,81 @@ function Graphics:shear(x, y)
     return self
 end
 
---- Fills the shape described by the given vertices
+--- Paths
+
+--- Resets the current path.
+function Graphics:begin_path()
+    self.current_path = PathBuilder(self.options)
+
+    return self
+end
+
+--- Creates a new subpath with the given point.
+function Graphics:move_to(x, y)
+    self.current_path:move_to(x, y)
+    return self
+end
+
+--- Marks the current subpath as closed, and starts a new subpath with a point the same as the start and end of the
+--- newly closed subpath.
+function Graphics:close_path()
+    self.current_path:close_path()
+    return self
+end
+
+--- Adds the given point to the current subpath, connected to the previous one by a straight line.
+function Graphics:line_to(x, y)
+    self.current_path:line_to(x, y)
+    return self
+end
+
+--- Adds the given point to the current subpath, connected to the previous one by a quadratic Bézier curve with the
+--- given control point.
+function Graphics:quadratic_curve_to(cpx, cpy, x, y)
+    self.current_path:quadratic_curve_to(cpx, cpy, x, y)
+    return self
+end
+
+--- Adds the given point to the current subpath, connected to the previous one by a cubic Bézier curve with the given
+--- control points.
+function Graphics:bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
+    self.current_path:bezier_curve_to(cp1x, cp1y, cp2x, cp2y, x, y)
+    return self
+end
+
+--- Draws an elliptical arc from the current point to (x, y). The size and orientation of the ellipse are defined by two
+--- radii (rx, ry) and an x-axis-rotation, which indicates how the ellipse as a whole is rotated, in degrees, relative
+--- to the current coordinate system. The center (cx, cy) of the ellipse is calculated automatically to satisfy the
+--- constraints imposed by the other parameters. large-arc-flag and sweep-flag contribute to the automatic calculations
+--- and help determine how the arc is drawn.
+function Graphics:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
+    self.current_path:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
+    return self
+end
+
+--- Adds points to the subpath such that the arc described by the circumference of the circle described by the
+--- arguments, starting at the given start angle and ending at the given end angle, going in the given direction
+--- (defaulting to clockwise), is added to the path, connected to the previous point by a straight line.
+function Graphics:arc(x, y, radius, start_angle, end_angle, counterclockwise)
+    self.current_path:arc(x, y, radius, start_angle, end_angle, counterclockwise)
+    return self
+end
+
+--- Same as arc(), but allows differents radii on the horizontal and vertical axis and a rotation angle.
+function Graphics:elliptical_arc(cx, cy, rx, ry, start_angle, end_angle, counterclockwise, rotation)
+    self.current_path:elliptical_arc(cx, cy, rx, ry, start_angle, end_angle, counterclockwise, rotation)
+    return self
+end
+
+--- Adds a new closed subpath to the path, representing the given rectangle.
+function Graphics:rect(x, y, w, h)
+    self.current_path:rect(x, y, w, h)
+    return self
+end
+
+--- Drawing
+
+--- Fills the shape described by the given vertices.
 function Graphics:fill_vertices(vertices)
     assert(vertices)
 
@@ -376,7 +461,7 @@ function Graphics:fill_vertices(vertices)
     return self
 end
 
---- Draws the outline of the shape described by the given vertices, closing it if `closed` is true
+--- Draws the outline of the shape described by the given vertices, closing it if `closed` is true.
 function Graphics:stroke_vertices(vertices, closed)
     assert(vertices)
 
@@ -396,11 +481,19 @@ function Graphics:stroke_vertices(vertices, closed)
                 fn_draw_lines = "love.graphics.line(" .. bufferid .. ")\n"
             end
 
-            self.script = self.script .. "love.graphics.stencil(" .. put_function(self, fn_draw_lines) .. ", 'replace', 0xFF)\n"
+            self.script = self.script ..
+                "love.graphics.stencil(" .. put_function(self, fn_draw_lines) .. ", 'replace', 0xFF)\n"
             apply_paint(self, self.state.stroke_paint)
         else
             -- fill the stroke
-            local stroke_path = stroke.gen_strips(vertices, closed, self.state.line_width, self.state.line_caps, self.state.line_joins, self.state.miter_limit, self.options)
+            local stroke_path = stroke.gen_strips(
+                vertices, closed,
+                self.state.line_width,
+                self.state.line_caps,
+                self.state.line_joins,
+                self.state.miter_limit,
+                self.options
+            )
 
             if #(stroke_path.subpaths) > 0 then
                 -- set the fill_rule to "strip"
@@ -427,7 +520,7 @@ function Graphics:stroke_vertices(vertices, closed)
     return self
 end
 
---- Fills and/or draws the outline of the given path, according to the current stroke_paint and fill_paint
+--- Fills and/or draws the outline of the given path, according to the current stroke_paint and fill_paint.
 function Graphics:draw_vertices(vertices, closed)
     assert(vertices)
 
@@ -440,9 +533,9 @@ function Graphics:draw_vertices(vertices, closed)
     end
 end
 
---- Fills the given path
+--- Fills the given path.
 function Graphics:fill_path(path)
-    assert(path)
+    path = path or self.current_path
 
     for i = 1, #(path.subpaths) do
         local sub = path.subpaths[i]
@@ -453,22 +546,28 @@ function Graphics:fill_path(path)
     return self
 end
 
---- Draws the outline of the given path
+--- Draws the outline of the given path.
 function Graphics:stroke_path(path)
-    assert(path)
+    path = path or self.current_path
 
     for i = 1, #(path.subpaths) do
         local sub = path.subpaths[i]
 
-        self:stroke_vertices(sub.vertices, sub.closed, self.state.line_width, self.state.line_caps, self.state.line_joins, self.state.miter_limit)
+        self:stroke_vertices(
+            sub.vertices, sub.closed,
+            self.state.line_width,
+            self.state.line_caps,
+            self.state.line_joins,
+            self.state.miter_limit
+        )
     end
 
     return self
 end
 
---- Fills and/or draws the outline of the given path, according to the current stroke_paint and fill_paint
+--- Fills and/or draws the outline of the given path, according to the current stroke_paint and fill_paint.
 function Graphics:draw_path(path)
-    assert(path)
+    path = path or self.current_path
 
     if self.state.fill_paint ~= nil then
         self:fill_path(path)
@@ -479,7 +578,9 @@ function Graphics:draw_path(path)
     end
 end
 
---- Actually draws this Graphics object
+--- Effectively drawing
+
+--- Actually draws this Graphics object.
 function Graphics:draw(x, y, sx, sy)
     assert(self.script, "Graphics object is invalid. It has probably been released.")
 
