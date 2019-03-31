@@ -10,21 +10,63 @@ are welcome, but for now, lövector only has an SVG implementation.
 ```lua
 local lovector = require "lovector"
 
+local house = nil
 local tiggie = nil
 
+-- You first create the vector graphics images once:
 function love.load()
-    -- Load the SVG:
+    --- Example: Build a house by hand
+    -- Create a path
+    -- Most methods return "self", so you can chain method calls
+    local house_path = lovector.PathBuilder()
+        -- wall
+        :move_to(75, 140)
+        :line_to(225, 140)
+        :line_to(225, 250)
+        :line_to(75, 250)
+        :close_path()
+
+        -- Roof
+        :move_to(50, 140)
+        :line_to(150, 60)
+        :line_to(250, 140)
+        :close_path()
+
+    local door_path = lovector.PathBuilder()
+        :move_to(130, 190)
+        :line_to(170, 190)
+        :line_to(170, 250)
+        :line_to(130, 250)
+        :close_path()
+
+    -- Create a vector graphics image with "Graphics"
+    -- It dynamically generates a LÖVE draw function we can use later
+    -- Most methods return "self"
+    house = lovector.Graphics()
+        -- Stroke the house path (wall + roof)
+        :set_line_width(10)
+        :stroke_path(house_path)
+
+        -- Fill the door
+        :fill_path(door_path)
+
+    --- Example: Load an SVG
+    -- It just does all the work for you, but it's a lovector.Graphics too!
     tiggie = lovector.SVG("demo_files/ghostscript-tiger.svg")
 end
 
+-- Then, you can draw them anywhere, as many times as you want!
 function love.draw()
-    -- Draw it!
+    --- Example: Drawing stuff!
+
     -- Arguments are:
     -- 1. x_pos (default = 0)
     -- 2. y_pos (default = 0)
     -- 3. x_scale (default = 1)
     -- 4. y_scale (default = x_scale)
-    tiggie:draw(0, 0, 10)
+
+    house:draw(0, 0)
+    tiggie:draw(300, 0, 10)
 end
 ```
 
@@ -43,7 +85,7 @@ features of lövector. You can move the camera and zoom-in as much as you want.
 * Path tracing with `move_to`, `line_to` and other `<canvas>`-like commands.
     Supports cubic and quadratic Bézier curves, and elliptical arcs.
 * Entirely written in Lua, making it available on every platform where LÖVE is.
-* ≈ 70 KB
+* < 100 KB
 
 Here's a summary table of what lövector does and doesn't support for now:
 

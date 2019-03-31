@@ -27,8 +27,8 @@ local lovector = require "lovector"
 local oldmousex = nil
 local oldmousey = nil
 
-local cameraX = 100
-local cameraY = -100
+local cameraX = 0
+local cameraY = -140
 local cameraXVel = 0
 local cameraYVel = 0
 local cameraZoomTarget = 0.8
@@ -51,26 +51,34 @@ function love.load()
 	--- Basic demo
 	-- Create a path
 	-- Most methods return "self", so you can chain method calls
-	local path = lovector.PathBuilder()
-		-- Use <canvas>-like methods
-		:move_to(0, 0)
-		:line_to(100, 100)
-		:line_to(100, 0)
+	local house_path = lovector.PathBuilder()
+		-- wall
+		:move_to(75, 140)
+		:line_to(225, 140)
+		:line_to(225, 250)
+		:line_to(75, 250)
+		:close_path()
+
+		-- Roof
+		:move_to(50, 140)
+		:line_to(150, 60)
+		:line_to(250, 140)
+		:close_path()
+
+	local door_path = lovector.PathBuilder()
+		:move_to(130, 190)
+		:line_to(170, 190)
+		:line_to(170, 250)
+		:line_to(130, 250)
+		:close_path()
 
 	-- Create a vector graphics image with "Graphics"
 	-- It dynamically generates a LÖVE draw function we can use later
 	-- Most methods return "self"
 	graphics[1] = lovector.Graphics()
-		-- Fill the path in red
-		:set_fill_paint(lovector.paint.Color(1, 0, 0, 1))
-		:fill_path(path)
-
-		-- Stroke the path in blue
-		:set_stroke_paint(lovector.paint.Color(0, 0, 1, 1))
-		:set_line_joins("round")
-		:set_line_caps("round")
-		:set_line_width(5)
-		:stroke_path(path)
+		:set_line_width(10)
+		:stroke_path(house_path)
+		:fill_path(door_path)
 
 	--- SVG loading demo
 	-- (it just returns a "Graphics")
@@ -114,9 +122,9 @@ function love.draw()
 	love.graphics.translate(-cameraX, -cameraY)
 
 	-- Draw all our graphics!
-	graphics[1]:draw()
-	graphics[2]:draw(200, 0)
-	graphics[3]:draw(1000, 50, 400)
+	graphics[1]:draw(0, -300)
+	graphics[2]:draw(0, 0)
+	graphics[3]:draw(800, 50, 400)
 
 	-- Get out of the camera
 	love.graphics.pop()
