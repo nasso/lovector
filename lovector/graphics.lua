@@ -70,19 +70,26 @@ local function put_function(self, source)
     )
 end
 
---- Draws a shape on the stencil buffer.
-local function stencil_mask(self, vertices, clear_stencil)
+--- Fills a shape on the stencil buffer.
+local function stencil_fill_mask(self, vertices, clear_stencil)
     assert(vertices)
 
+    if clear_stencil == nil then
+        clear_stencil = true
+    end
+
+    local empty = true
+
     -- not enough vertices
-    if #vertices <= 4 then
-        if clear_stencil == true then
+    if #vertices < 6 then
+        if clear_stencil then
             self.script = self.script .. "love.graphics.clear(false, true, false)\n"
         end
 
-    -- #vertices > 4
+    -- #vertices >= 6
     else
         local vertices_pairs = {}
+
         for i = 1, #vertices, 2 do
             table.insert(vertices_pairs, { vertices[i], vertices[i+1] })
         end
@@ -101,7 +108,7 @@ local function stencil_mask(self, vertices, clear_stencil)
             -- nonzero stencil
             result = [[
                 love.graphics.setMeshCullMode("front")
-                love.graphics.stencil({fn_draw_mesh}, "incrementwrap", 0, not {clear_stencil})
+                love.graphics.stencil({fn_draw_mesh}, "incrementwrap", 0, {keep_stencil})
 
                 love.graphics.setMeshCullMode("back")
                 love.graphics.stencil({fn_draw_mesh}, "decrementwrap", 0, true)
@@ -110,22 +117,82 @@ local function stencil_mask(self, vertices, clear_stencil)
             -- evenodd stencil
             result = [[
                 love.graphics.setMeshCullMode("none")
-                love.graphics.stencil({fn_draw_mesh}, "invert", 0, not {clear_stencil})
+                love.graphics.stencil({fn_draw_mesh}, "invert", 0, {keep_stencil})
             ]]
         else
             -- default stencil
             result = [[
                 love.graphics.setMeshCullMode("none")
-                love.graphics.stencil({fn_draw_mesh}, "replace", 0xFF, not {clear_stencil})
+                love.graphics.stencil({fn_draw_mesh}, "replace", 0xFF, {keep_stencil})
             ]]
         end
 
         self.script = self.script .. result
-        :gsub("{fn_draw_mesh}", put_function(self, "love.graphics.draw(" .. put_data(self, mesh) .. ")"))
-        :gsub("{clear_stencil}", tostring(clear_stencil ~= false))
+            :gsub("{fn_draw_mesh}", put_function(self, "love.graphics.draw(" .. put_data(self, mesh) .. ")"))
+            :gsub("{keep_stencil}", tostring(not clear_stencil))
+
+        empty = false
     end
 
-    return self
+    return empty
+end
+
+--- Strokes a shape on the stencil buffer.
+local function stencil_stroke_mask(self, vertices, closed, clear_stencil)
+    if clear_stencil == nil then
+        clear_stencil = true
+    end
+
+    local empty = true
+
+    if self.state.stroke_paint and #vertices >= 4 then
+        if self.options["love_lines"] then
+            local bufferid = put_data(self, vecutils.prune_small_lines(vertices, closed, 1/1000))
+
+            self.script = self.script .. "love.graphics.setLineWidth(" .. self.state.line_width .. ")\n"
+
+            local fn_draw_lines = ""
+
+            if closed then
+                fn_draw_lines = "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
+            else
+                fn_draw_lines = "love.graphics.line(" .. bufferid .. ")\n"
+            end
+
+            self.script = self.script ..
+                "love.graphics.stencil(" ..
+                    put_function(self, fn_draw_lines) .. ", 'replace', 0xFF, " .. (not clear_stencil) ..
+                ")\n"
+            empty = false
+        else
+            -- fill the stroke
+            local stroke_path = stroke.gen_strips(
+                vertices, closed,
+                self.state.line_width,
+                self.state.line_caps,
+                self.state.line_joins,
+                self.state.miter_limit,
+                self.options
+            )
+
+            -- set the fill_rule to "strip"
+            local old_fill_rule = self.state.fill_rule
+            self.state.fill_rule = "strip"
+
+            for i = 1, #(stroke_path.subpaths) do
+                local sub = stroke_path.subpaths[i]
+
+                -- clear the stencil only for the first non-empty subpath
+                local sub_empty = stencil_fill_mask(self, sub.vertices, clear_stencil and empty)
+                empty = empty and sub_empty
+            end
+
+            -- restore previous fill_rule
+            self.state.fill_rule = old_fill_rule
+        end
+    end
+
+    return empty
 end
 
 --- Draws a fullscreen rectangle with the given paint, with a stencil test "~= 0".
@@ -147,8 +214,6 @@ local function apply_paint(self, paint)
         :gsub("{b}", paint.b)
         :gsub("{a}", paint.a)
     end
-
-    return self
 end
 
 -- methods
@@ -453,8 +518,9 @@ end
 function Graphics:fill_vertices(vertices)
     assert(vertices)
 
-    if #vertices >= 6 then
-        stencil_mask(self, vertices)
+    local empty = stencil_fill_mask(self, vertices)
+
+    if not empty then
         apply_paint(self, self.state.fill_paint)
     end
 
@@ -465,56 +531,10 @@ end
 function Graphics:stroke_vertices(vertices, closed)
     assert(vertices)
 
-    closed = closed or false
+    local empty = stencil_stroke_mask(self, vertices, closed or false)
 
-    if self.state.stroke_paint and #vertices >= 4 then
-        if self.options["love_lines"] then
-            local bufferid = put_data(self, vecutils.prune_small_lines(vertices, closed, 1/1000))
-
-            self.script = self.script .. "love.graphics.setLineWidth(" .. self.state.line_width .. ")\n"
-
-            local fn_draw_lines = ""
-
-            if closed then
-                fn_draw_lines = "love.graphics.polygon(\"line\", " .. bufferid .. ")\n"
-            else
-                fn_draw_lines = "love.graphics.line(" .. bufferid .. ")\n"
-            end
-
-            self.script = self.script ..
-                "love.graphics.stencil(" .. put_function(self, fn_draw_lines) .. ", 'replace', 0xFF)\n"
-            apply_paint(self, self.state.stroke_paint)
-        else
-            -- fill the stroke
-            local stroke_path = stroke.gen_strips(
-                vertices, closed,
-                self.state.line_width,
-                self.state.line_caps,
-                self.state.line_joins,
-                self.state.miter_limit,
-                self.options
-            )
-
-            if #(stroke_path.subpaths) > 0 then
-                -- set the fill_rule to "strip"
-                local old_fill_rule = self.state.fill_rule
-                self.state.fill_rule = "strip"
-
-                for i = 1, #(stroke_path.subpaths) do
-                    local sub = stroke_path.subpaths[i]
-
-                    if #(sub.vertices) >= 6 then
-                        -- clear the stencil if i == 1 (only for the first subpath)
-                        stencil_mask(self, sub.vertices, i == 1)
-                    end
-                end
-
-                -- restore previous fill_rule
-                self.state.fill_rule = old_fill_rule
-
-                apply_paint(self, self.state.stroke_paint)
-            end
-        end
+    if not empty then
+        apply_paint(self, self.state.stroke_paint)
     end
 
     return self
@@ -529,7 +549,7 @@ function Graphics:draw_vertices(vertices, closed)
     end
 
     if self.state.stroke_paint ~= nil then
-        self:stroke_vertices(vertices, closed)
+        self:stroke_vertices(vertices, closed or false)
     end
 end
 
@@ -537,10 +557,17 @@ end
 function Graphics:fill_path(path)
     path = path or self.current_path
 
+    local empty = true
+
     for i = 1, #(path.subpaths) do
         local sub = path.subpaths[i]
 
-        self:fill_vertices(sub.vertices)
+        local sub_empty = stencil_fill_mask(self, sub.vertices, empty)
+        empty = empty and sub_empty
+    end
+
+    if not empty then
+        apply_paint(self, self.state.fill_paint)
     end
 
     return self
@@ -550,16 +577,17 @@ end
 function Graphics:stroke_path(path)
     path = path or self.current_path
 
+    local empty = true
+
     for i = 1, #(path.subpaths) do
         local sub = path.subpaths[i]
 
-        self:stroke_vertices(
-            sub.vertices, sub.closed,
-            self.state.line_width,
-            self.state.line_caps,
-            self.state.line_joins,
-            self.state.miter_limit
-        )
+        local sub_empty = stencil_stroke_mask(self, sub.vertices, sub.closed, empty)
+        empty = empty and sub_empty
+    end
+
+    if not empty then
+        apply_paint(self, self.state.stroke_paint)
     end
 
     return self
