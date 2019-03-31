@@ -221,69 +221,72 @@ end
 
 function common.color_parse(str, default_r, default_g, default_b, default_a)
     if str == nil then
-            return default_r, default_g, default_b, default_a
-        end
+        return default_r, default_g, default_b, default_a
+    end
 
-        if str == "none" then
-            return nil, nil, nil, nil
-        end
+    str = str:gsub("^%s+", "")
+    str = str:gsub("%s+$", "")
 
-        -- color name
-        if COLOR_NAMES[str] ~= nil then
-            local color = COLOR_NAMES[str]
-            return color[1] / 255, color[2] / 255, color[3] / 255, color[4] / 255
+    if str == "none" then
+        return nil, nil, nil, nil
+    end
 
-        -- #FFFFFF
-        elseif string.match(str,"#......") then
-            local red, green, blue = string.match(str,"#(..)(..)(..)")
-            red = tonumber(red,16)/255
-            green = tonumber(green,16)/255
-            blue = tonumber(blue,16)/255
-            return red, green, blue, 1
+    -- color name
+    if COLOR_NAMES[str] ~= nil then
+        local color = COLOR_NAMES[str]
+        return color[1] / 255, color[2] / 255, color[3] / 255, color[4] / 255
 
-        -- #FFF
-        elseif string.match(str,"#...") then
-            local red, green, blue = string.match(str,"#(.)(.)(.)")
-            red = tonumber(red,16)/15
-            green = tonumber(green,16)/15
-            blue = tonumber(blue,16)/15
-            return red, green, blue, 1
+    -- #FFFFFF
+    elseif string.match(str, "^#......$") then
+        local red, green, blue = string.match(str, "#(..)(..)(..)")
+        red = tonumber(red, 16) / 255
+        green = tonumber(green, 16) / 255
+        blue = tonumber(blue, 16) / 255
+        return red, green, blue, 1
 
-        -- rgb(255, 255, 255)
-        elseif string.match(str,"rgb%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*%)") then
-            local red, green, blue = string.match(str,"rgb%((%d+),%s*(%d+),%s*(%d+)%)")
-            red = tonumber(red)/255
-            green = tonumber(green)/255
-            blue = tonumber(blue)/255
-            return red, green, blue, 1
+    -- #FFF
+    elseif string.match(str, "^#...$") then
+        local red, green, blue = string.match(str, "#(.)(.)(.)")
+        red = tonumber(red, 16) / 15
+        green = tonumber(green, 16) / 15
+        blue = tonumber(blue, 16) / 15
+        return red, green, blue, 1
 
-        -- rgb(100%, 100%, 100%)
-        elseif string.match(str,"rgb%(%s*%d+%%%s*,%s*%d+%%%s*,%s*%d+%%%s*%)") then
-            local red, green, blue = string.match(str,"rgb%(%s*(%d+)%%%s*,%s*(%d+)%%%s*,%s*(%d+)%%%s*%)")
-            red = tonumber(red)/100
-            green = tonumber(green)/100
-            blue = tonumber(blue)/100
-            return red, green, blue, 1
+    -- rgb(255, 255, 255)
+    elseif string.match(str, "^rgb%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*%)$") then
+        local red, green, blue = string.match(str, "rgb%((%d+),%s*(%d+),%s*(%d+)%)")
+        red = tonumber(red) / 255
+        green = tonumber(green) / 255
+        blue = tonumber(blue) / 255
+        return red, green, blue, 1
 
-        -- rgba(255, 255, 255, 1.0)
-        elseif string.match(str,"rgba%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*,%s*[^%)%+s]+%s*%)") then
-            local red, green, blue, alpha = string.match(str,"rgba%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,%s*([^%)%s]+)%s*%)")
-            red = tonumber(red)/255
-            green = tonumber(green)/255
-            blue = tonumber(blue)/255
-            return red, green, blue, tonumber(alpha,10)
+    -- rgb(100%, 100%, 100%)
+    elseif string.match(str, "^rgb%(%s*%d+%%%s*,%s*%d+%%%s*,%s*%d+%%%s*%)$") then
+        local red, green, blue = string.match(str, "rgb%(%s*(%d+)%%%s*,%s*(%d+)%%%s*,%s*(%d+)%%%s*%)")
+        red = tonumber(red) / 100
+        green = tonumber(green) / 100
+        blue = tonumber(blue) / 100
+        return red, green, blue, 1
 
-        -- rgba(100%, 100%, 100%, 1.0)
-        elseif string.match(str,"rgba%(%s*%d+%%%s*,%s*%d+%%%s*,%s*%d+%%%s*,%s*[^%)%s]+%s*%)") then
-            local red, green, blue, alpha = string.match(str,"rgba%(%s*(%d+)%%%s*,%s*(%d+)%%%s*,%s*(%d+)%%%s*,%s*([^%)%s]+)%s*%)")
-            red = tonumber(red)/100
-            green = tonumber(green)/100
-            blue = tonumber(blue)/100
-            return red, green, blue, tonumber(alpha,10)
+    -- rgba(255, 255, 255, 1.0)
+    elseif string.match(str, "^rgba%(%s*%d+%s*,%s*%d+%s*,%s*%d+%s*,%s*[^%)%+s]+%s*%)$") then
+        local red, green, blue, alpha = string.match(str, "rgba%(%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*,%s*([^%)%s]+)%s*%)")
+        red = tonumber(red)/255
+        green = tonumber(green)/255
+        blue = tonumber(blue)/255
+        return red, green, blue, tonumber(alpha, 10)
 
-        -- Any unsupported format
-        else
-            return nil, nil, nil, nil
+    -- rgba(100%, 100%, 100%, 1.0)
+    elseif string.match(str, "^rgba%(%s*%d+%%%s*,%s*%d+%%%s*,%s*%d+%%%s*,%s*[^%)%s]+%s*%)$") then
+        local red, green, blue, alpha = string.match(str, "rgba%(%s*(%d+)%%%s*,%s*(%d+)%%%s*,%s*(%d+)%%%s*,%s*([^%)%s]+)%s*%)")
+        red = tonumber(red) / 100
+        green = tonumber(green) / 100
+        blue = tonumber(blue) / 100
+        return red, green, blue, tonumber(alpha, 10)
+
+    -- Any unsupported format
+    else
+        return nil, nil, nil, nil
     end
 end
 
