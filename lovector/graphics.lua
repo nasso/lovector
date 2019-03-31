@@ -161,7 +161,7 @@ local function stencil_stroke_mask(self, vertices, closed, clear_stencil)
 
             self.script = self.script ..
                 "love.graphics.stencil(" ..
-                    put_function(self, fn_draw_lines) .. ", 'replace', 0xFF, " .. (not clear_stencil) ..
+                    put_function(self, fn_draw_lines) .. ", 'replace', 0xFF, " .. tostring(not clear_stencil) ..
                 ")\n"
             empty = false
         else
