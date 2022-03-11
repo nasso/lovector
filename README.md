@@ -129,7 +129,7 @@ follow these coding style guidelines as much as possible:
 ### Lua coding style
 
 * No trailing whitespace at the end of a line.
-* "Class" names must be in `CamelCase`.
+* "Class" names must be in `PascalCase`.
 * Variables, functions, methods must be in `snake_case`.
 * Modules must have a `shortname`, `onlylowercase` and with nothing between
     words.
@@ -143,8 +143,7 @@ follow these coding style guidelines as much as possible:
     they're part of a mathematic expression where they have an implicit higher
     precedence than other operators. Example: `a*b + c*d`, `a * b + c * d`,
     `a * b + c*d` are okay, but `a*b * c` isn't.
-* Refer to [the Lua style guidelines][5]
-    for everything else.
+* Refer to [the Lua style guidelines][5] for everything else.
 
 [1]: https://www.lua.org/manual/5.1/manual.html#2.4.2
 [2]: https://www.lua.org/manual/5.1/manual.html#2.4.4
