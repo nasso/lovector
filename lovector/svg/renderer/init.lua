@@ -23,15 +23,15 @@ SOFTWARE.
 ]]
 
 return {
-    ["circle"] = "circle";
-    ["defs"] = "defs";
-    ["ellipse"] = "ellipse";
-    ["g"] = "";
-    ["line"] = "line";
-    ["path"] = "path";
-    ["polygon"] = "poly";
-    ["polyline"] = "poly";
-    ["rect"] = "rect";
-    ["svg"] = "svg";
-    ["use"] = "use";
+    ["circle"] = "circle",
+    ["defs"] = "defs",
+    ["ellipse"] = "ellipse",
+    ["g"] = "",
+    ["line"] = "line",
+    ["path"] = "path",
+    ["polygon"] = "poly",
+    ["polyline"] = "poly",
+    ["rect"] = "rect",
+    ["svg"] = "svg",
+    ["use"] = "use",
 }

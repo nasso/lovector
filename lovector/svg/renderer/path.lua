@@ -49,72 +49,64 @@ function renderer:empty(svg, options)
         -- parse command arguments
         if strargs ~= nil and #strargs > 0 then
             for arg in string.gmatch(strargs, "%-?[^%s,%-]+") do
-               table.insert(args, 1, tonumber(arg,10))
+                table.insert(args, 1, tonumber(arg, 10))
             end
         end
 
-        -- move to
         if op == "M" then
+            -- move to
             while #args >= 2 do
                 path:move_to(table.remove(args), table.remove(args))
             end
-
-        -- move to (relative)
         elseif op == "m" then
+            -- move to (relative)
             while #args >= 2 do
                 local cpx, cpy = path:last_point()
 
                 path:move_to(cpx + table.remove(args), cpy + table.remove(args))
             end
-
-        -- line to
         elseif op == "L" then
+            -- line to
             while #args >= 2 do
                 path:line_to(table.remove(args), table.remove(args))
             end
-
-        -- line to (relative)
         elseif op == "l" then
+            -- line to (relative)
             while #args >= 2 do
                 local cpx, cpy = path:last_point()
 
                 path:line_to(cpx + table.remove(args), cpy + table.remove(args))
             end
-
-        -- line to (horizontal)
         elseif op == "H" then
+            -- line to (horizontal)
             while #args >= 1 do
                 local _, cpy = path:last_point()
 
                 path:line_to(table.remove(args), cpy)
             end
-
-        -- line to (horizontal, relative)
         elseif op == "h" then
+            -- line to (horizontal, relative)
             while #args >= 1 do
                 local cpx, cpy = path:last_point()
 
                 path:line_to(cpx + table.remove(args), cpy)
             end
-
-        -- line to (vertical)
         elseif op == "V" then
+            -- line to (vertical)
             while #args >= 1 do
                 local cpx = path:last_point()
 
                 path:line_to(cpx, table.remove(args))
             end
-
-        -- line to (vertical, relative)
         elseif op == "v" then
+            -- line to (vertical, relative)
             while #args >= 1 do
                 local cpx, cpy = path:last_point()
 
                 path:line_to(cpx, cpy + table.remove(args))
             end
-
-        -- cubic bezier curve
         elseif op == "C" then
+            -- cubic bezier curve
             while #args >= 6 do
                 local x1 = table.remove(args)
                 local y1 = table.remove(args)
@@ -129,9 +121,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x2
                 prev_ctrly = y2
             end
-
-        -- cubic bezier curve (relative)
         elseif op == "c" then
+            -- cubic bezier curve (relative)
             while #args >= 6 do
                 local cpx, cpy = path:last_point()
 
@@ -148,9 +139,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x2
                 prev_ctrly = y2
             end
-
-        -- smooth cubic Bézier curve
         elseif op == "S" then
+            -- smooth cubic Bézier curve
             while #args >= 4 do
                 local cpx, cpy = path:last_point()
 
@@ -169,9 +159,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x2
                 prev_ctrly = y2
             end
-
-        -- smooth cubic Bézier curve (relative)
         elseif op == "s" then
+            -- smooth cubic Bézier curve (relative)
             while #args >= 4 do
                 local cpx, cpy = path:last_point()
 
@@ -190,9 +179,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x2
                 prev_ctrly = y2
             end
-
-        -- quadratic Bézier curve
         elseif op == "Q" then
+            -- quadratic Bézier curve
             while #args >= 4 do
                 local x1 = table.remove(args)
                 local y1 = table.remove(args)
@@ -205,9 +193,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x1
                 prev_ctrly = y1
             end
-
-        -- quadratic Bézier curve (relative)
         elseif op == "q" then
+            -- quadratic Bézier curve (relative)
             while #args >= 4 do
                 local cpx, cpy = path:last_point()
 
@@ -222,9 +209,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x1
                 prev_ctrly = y1
             end
-
-        -- smooth quadratic Bézier curve
         elseif op == "T" then
+            -- smooth quadratic Bézier curve
             while #args >= 2 do
                 local cpx, cpy = path:last_point()
 
@@ -241,9 +227,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x1
                 prev_ctrly = y1
             end
-
-        -- smooth quadratic Bézier curve (relative)
         elseif op == "t" then
+            -- smooth quadratic Bézier curve (relative)
             while #args >= 2 do
                 local cpx, cpy = path:last_point()
 
@@ -260,9 +245,8 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x1
                 prev_ctrly = y1
             end
-
-        -- arc to
         elseif op == "A" then
+            -- arc to
             while #args >= 7 do
                 local rx = table.remove(args)
                 local ry = table.remove(args)
@@ -274,9 +258,8 @@ function renderer:empty(svg, options)
 
                 path:elliptical_arc_to(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
             end
-
-        -- arc to (relative)
         elseif op == "a" then
+            -- arc to (relative)
             while #args >= 7 do
                 local cpx, cpy = path:last_point()
 
@@ -290,9 +273,8 @@ function renderer:empty(svg, options)
 
                 path:elliptical_arc_to(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
             end
-
-        -- close shape (relative and absolute are the same)
         elseif op == "Z" or op == "z" then
+            -- close shape (relative and absolute are the same)
             path:close_path()
         end
 

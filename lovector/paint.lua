@@ -26,11 +26,11 @@ local paint = {}
 
 function paint.Color(r, g, b, a)
     return {
-        type = "color";
-        r = r;
-        g = g;
-        b = b;
-        a = a;
+        type = "color",
+        r = r,
+        g = g,
+        b = b,
+        a = a,
     }
 end
 

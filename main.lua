@@ -39,11 +39,11 @@ local graphics = {}
 function love.load()
     -- Windo settings
     love.window.setMode(1280, 960, {
-        minheight = 30;
-        minwidth = 400;
-        msaa = 4;
-        resizable = true;
-        vsync = false;
+        minheight = 30,
+        minwidth = 400,
+        msaa = 4,
+        resizable = true,
+        vsync = false,
     })
 
     love.graphics.setBackgroundColor(1, 1, 1)
@@ -112,9 +112,9 @@ function love.draw()
 
     -- Move to camera space
     love.graphics.push()
-    love.graphics.translate(w/2, h/2)
+    love.graphics.translate(w / 2, h / 2)
     love.graphics.scale(cameraZoom)
-    love.graphics.translate(-w/2, -h/2)
+    love.graphics.translate(-w / 2, -h / 2)
     love.graphics.translate(-cameraX, -cameraY)
 
     -- Draw all our graphics!
@@ -133,7 +133,10 @@ function love.draw()
 
     -- Stats
     local stats = love.graphics.getStats()
-    love.graphics.print(tostring(love.timer.getFPS()) .. " FPS | " .. tostring(math.floor(love.timer.getDelta() * 100000) / 100) .. " ms", 10, 10)
+    love.graphics.print(
+        tostring(love.timer.getFPS()) .. " FPS | " .. tostring(math.floor(love.timer.getDelta() * 100000) / 100) .. " ms",
+        10,
+        10)
     love.graphics.print("Draw calls: " .. tostring(stats.drawcalls), 10, 30)
     love.graphics.print("Canvas switches: " .. tostring(stats.canvasswitches), 10, 50)
     love.graphics.print("Texture memory: " .. tostring(stats.texturememory) .. " B", 10, 70)

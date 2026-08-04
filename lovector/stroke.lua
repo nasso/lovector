@@ -29,18 +29,18 @@ local vecutils = require(cwd .. "vecutils")
 local stroke = {}
 
 local DEFAULT_OPTIONS = {
-    ["stroke_segment_min_length"] = 1 / 1000;
-    ["stroke_join_discard_threshold"] = 1 / 5;
-    ["stroke_arc_segments"] = 20;
+    ["stroke_segment_min_length"] = 1 / 1000,
+    ["stroke_join_discard_threshold"] = 1 / 5,
+    ["stroke_arc_segments"] = 20,
 }
 
 local function build_vertices_table(vertices)
-    local copy =  {}
+    local copy = {}
 
     for i = 1, #vertices, 2 do
         table.insert(copy, {
-            x = vertices[i];
-            y = vertices[i + 1];
+            x = vertices[i],
+            y = vertices[i + 1],
         })
     end
 
@@ -208,16 +208,15 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                     local b_x = 0
                     local b_y = 0
 
-                    -- ...either on one side...
                     if cross > 0 then
+                        -- ...either on one side...
                         a_x = p.dy1
                         a_y = -p.dx1
 
                         b_x = -p.dy2
                         b_y = p.dx2
-
-                    -- ...or the other
                     else
+                        -- ...or the other
                         a_x = -p.dy1
                         a_y = p.dx1
 
@@ -248,19 +247,14 @@ function stroke.gen_strips(path, closed, width, line_cap, line_join, miter_limit
                 vertices:line_to(p.x + p.dy2 * half_width, p.y - p.dx2 * half_width)
             end
         elseif p.cap == true then
-            -- "butt" line cap
             if line_cap == "butt" then
                 vertices:line_to(p.x - p.dy * half_width, p.y + p.dx * half_width)
                 vertices:line_to(p.x + p.dy * half_width, p.y - p.dx * half_width)
-
-            -- "square" line cap
             elseif line_cap == "square" then
                 local side = (p.next == nil) and 1 or -1
 
                 vertices:line_to(p.x + (p.dx * side - p.dy) * half_width, p.y + (p.dy * side + p.dx) * half_width)
                 vertices:line_to(p.x + (p.dx * side + p.dy) * half_width, p.y + (p.dy * side - p.dx) * half_width)
-
-            -- "round" line cap
             elseif line_cap == "round" then
                 local side = (p.next == nil) and 0 or 1
 

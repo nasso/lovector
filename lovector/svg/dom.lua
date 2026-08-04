@@ -26,10 +26,10 @@ local DOM = {}
 
 -- Private constants
 local TOKEN_LIST = {
-    [""] = "%s*";
-    ["Name"] = "([:A-Z_a-z][:A-Z_a-z0-9%-%.]*)";
-    ["Eq"] = "=";
-    ["AttValue"] = { "\"(.-)\"", "'(.-)'" };
+    [""] = "%s*",
+    ["Name"] = "([:A-Z_a-z][:A-Z_a-z0-9%-%.]*)",
+    ["Eq"] = "=",
+    ["AttValue"] = { "\"(.-)\"", "'(.-)'" },
 }
 
 for k, v in pairs(TOKEN_LIST) do
@@ -38,7 +38,6 @@ for k, v in pairs(TOKEN_LIST) do
             for i, vi in ipairs(v) do
                 v[i] = "^" .. TOKEN_LIST[""] .. vi .. TOKEN_LIST[""]
             end
-
         else
             TOKEN_LIST[k] = "^" .. TOKEN_LIST[""] .. v .. TOKEN_LIST[""]
         end
@@ -67,7 +66,7 @@ local function parse_attributes(text)
         if j == nil then
             attributes[name] = true
 
-        -- If we found the =
+            -- If we found the =
         else
             -- we know j ~= nil, make it replace i
             i = j
@@ -110,7 +109,7 @@ local function element_tostring(element, indent_string, lvl)
     if element.children == nil then
         result = result .. indent .. "<" .. element.name .. attr .. " />\n"
 
-    -- regular element
+        -- regular element
     else
         result = result .. indent .. "<" .. element.name .. attr .. ">\n"
 
@@ -197,10 +196,10 @@ setmetatable(DOM.Element, DOM.Element.mt)
 
 function DOM.Element.mt.__call(_, name, attributes, children)
     local self = setmetatable({
-        parent = nil;
-        name = name;
-        attributes = attributes;
-        children = children;
+        parent = nil,
+        name = name,
+        attributes = attributes,
+        children = children,
     }, DOM.Element)
 
     -- set ourselves as the parent of our children
@@ -266,7 +265,6 @@ function DOM.Element:get_attribute(name, inherit, default)
 
     if value == nil then
         return default
-
     else
         return value
     end

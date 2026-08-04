@@ -31,8 +31,8 @@ setmetatable(PathBuilder, PathBuilder.mt)
 
 -- constants
 local DEFAULT_OPTIONS = {
-    ["arc_segments"] = 50;
-    ["bezier_depth"] = 5;
+    ["arc_segments"] = 50,
+    ["bezier_depth"] = 5,
 }
 
 -- private functions
@@ -60,26 +60,26 @@ local function endpoint_to_center(x1, y1, x2, y2, fa, fs, rx, ry, phi)
     local sin_phi = math.sin(rad_phi)
 
     -- Step 1: Compute (x1_, y1_)
-    local x1_ = cos_phi * (x1-x2)/2 + sin_phi * (y1-y2)/2
-    local y1_ = -sin_phi * (x1-x2)/2 + cos_phi * (y1-y2)/2
+    local x1_ = cos_phi * (x1 - x2) / 2 + sin_phi * (y1 - y2) / 2
+    local y1_ = -sin_phi * (x1 - x2) / 2 + cos_phi * (y1 - y2) / 2
 
     -- Step 2: Compute (cx_, cy_)
     local f = math.sqrt(
-        math.max(rx*rx * ry*ry - rx*rx * y1_*y1_ - ry*ry * x1_*x1_, 0) -- rounding errors safety
+        math.max(rx * rx * ry * ry - rx * rx * y1_ * y1_ - ry * ry * x1_ * x1_, 0) -- rounding errors safety
         /
-        (rx*rx * y1_*y1_ + ry*ry * x1_*x1_)
+        (rx * rx * y1_ * y1_ + ry * ry * x1_ * x1_)
     )
 
     if fa == fs then
         f = -f
     end
 
-    local cx_ =  f * rx * y1_ / ry
+    local cx_ = f * rx * y1_ / ry
     local cy_ = -f * ry * x1_ / rx
 
     -- Step 3: Compute (cx, cy) from (cx_, cy_)
-    local cx = cos_phi * cx_ - sin_phi * cy_ + (x1+x2)/2
-    local cy = sin_phi * cx_ + cos_phi * cy_ + (y1+y2)/2
+    local cx = cos_phi * cx_ - sin_phi * cy_ + (x1 + x2) / 2
+    local cy = sin_phi * cx_ + cos_phi * cy_ + (y1 + y2) / 2
 
     -- Step 4: Compute theta1 and dtheta
     local vx = (x1_ - cx_) / rx
@@ -147,8 +147,8 @@ end
 
 function PathBuilder:move_to(x, y)
     self.current_subpath = {
-        vertices = { x, y };
-        closed = false;
+        vertices = { x, y },
+        closed = false,
     }
 
     table.insert(self.subpaths, self.current_subpath)
@@ -266,10 +266,10 @@ function PathBuilder:elliptical_arc_to(rx, ry, phi, fa, fs, x, y)
     local cos_phi = math.cos(rad_phi)
     local sin_phi = math.sin(rad_phi)
 
-    local x1_ = cos_phi * (sx-x)/2 + sin_phi * (sy-y)/2
-    local y1_ = -sin_phi * (sx-x)/2 + cos_phi * (sy-y)/2
+    local x1_ = cos_phi * (sx - x) / 2 + sin_phi * (sy - y) / 2
+    local y1_ = -sin_phi * (sx - x) / 2 + cos_phi * (sy - y) / 2
 
-    local lambda = x1_*x1_/(rx*rx) + y1_*y1_/(ry*ry)
+    local lambda = x1_ * x1_ / (rx * rx) + y1_ * y1_ / (ry * ry)
 
     if lambda > 1 then
         local sqrt_lambda = math.sqrt(lambda)

@@ -28,9 +28,9 @@ local DOM = require(cwd .. "svg.dom")
 local common = require(cwd .. "svg.common")
 
 local DEFAULT_OPTIONS = {
-    ["debug"] = false;
-    ["path_debug"] = false;
-    ["stroke_debug"] = false;
+    ["debug"] = false,
+    ["path_debug"] = false,
+    ["stroke_debug"] = false,
 }
 
 --- Creates a Graphics from the given SVG file
@@ -58,10 +58,10 @@ local function SVG(source, options)
     end
 
     local svg = {
-        document = DOM.Document(source);
-        width = 0;
-        height = 0;
-        graphics = Graphics(options);
+        document = DOM.Document(source),
+        width = 0,
+        height = 0,
+        graphics = Graphics(options),
     }
 
     common.gen(svg, svg.document.root, options)

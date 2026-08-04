@@ -38,7 +38,7 @@ setmetatable(Graphics, Graphics.mt)
 
 -- constants
 local DEFAULT_OPTIONS = {
-    ["love_lines"] = false;
+    ["love_lines"] = false,
 }
 
 local SHAPE_MESH_VERTEX_FORMAT = {
@@ -80,18 +80,16 @@ local function stencil_fill_mask(self, vertices, clear_stencil)
 
     local empty = true
 
-    -- not enough vertices
     if #vertices < 6 then
+        -- not enough vertices
         if clear_stencil then
             self.script = self.script .. "love.graphics.clear(false, true, false)\n"
         end
-
-    -- #vertices >= 6
     else
         local vertices_pairs = {}
 
         for i = 1, #vertices, 2 do
-            table.insert(vertices_pairs, { vertices[i], vertices[i+1] })
+            table.insert(vertices_pairs, { vertices[i], vertices[i + 1] })
         end
 
         -- create the Mesh
@@ -147,7 +145,7 @@ local function stencil_stroke_mask(self, vertices, closed, clear_stencil)
 
     if self.state.stroke_paint and #vertices >= 4 then
         if self.options["love_lines"] then
-            local bufferid = put_data(self, vecutils.prune_small_lines(vertices, closed, 1/1000))
+            local bufferid = put_data(self, vecutils.prune_small_lines(vertices, closed, 1 / 1000))
 
             self.script = self.script .. "love.graphics.setLineWidth(" .. self.state.line_width .. ")\n"
 
@@ -161,7 +159,7 @@ local function stencil_stroke_mask(self, vertices, closed, clear_stencil)
 
             self.script = self.script ..
                 "love.graphics.stencil(" ..
-                    put_function(self, fn_draw_lines) .. ", 'replace', 0xFF, " .. tostring(not clear_stencil) ..
+                put_function(self, fn_draw_lines) .. ", 'replace', 0xFF, " .. tostring(not clear_stencil) ..
                 ")\n"
             empty = false
         else
@@ -209,10 +207,10 @@ local function apply_paint(self, paint)
 
             love.graphics.setStencilTest()
         ]])
-        :gsub("{r}", paint.r)
-        :gsub("{g}", paint.g)
-        :gsub("{b}", paint.b)
-        :gsub("{a}", paint.a)
+            :gsub("{r}", paint.r)
+            :gsub("{g}", paint.g)
+            :gsub("{b}", paint.b)
+            :gsub("{a}", paint.a)
     end
 end
 
@@ -237,13 +235,13 @@ function Graphics:init(options)
 
     self.state_stack = {}
     self.state = {
-        fill_paint = paint.Color(0, 0, 0, 1);
-        fill_rule = "nonzero";
-        line_caps = "butt";
-        line_joins = "miter";
-        line_width = 1;
-        miter_limit = 4;
-        stroke_paint = paint.Color(0, 0, 0, 1);
+        fill_paint = paint.Color(0, 0, 0, 1),
+        fill_rule = "nonzero",
+        line_caps = "butt",
+        line_joins = "miter",
+        line_width = 1,
+        miter_limit = 4,
+        stroke_paint = paint.Color(0, 0, 0, 1),
     }
 
     self:begin_path()
@@ -617,8 +615,8 @@ function Graphics:draw(x, y, sx, sy)
         self.script_fn = assert(loadstring(self.script_fn_src))
     end
 
-    x = x   or 0
-    y = y   or 0
+    x = x or 0
+    y = y or 0
     sx = sx or 1
     sy = sy or sx
 
