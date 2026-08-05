@@ -26,6 +26,74 @@ local cwd = (...):match('(.*lovector).-$') .. "."
 local PathBuilder = require(cwd .. "pathbuilder")
 local common = require(cwd .. "svg.common")
 
+local ArgsReader = {}
+ArgsReader.__index = ArgsReader
+setmetatable(ArgsReader, {
+    -- constructor
+    __call = function(_, str)
+        local self = setmetatable({}, ArgsReader)
+        self:reset(str)
+        return self
+    end
+})
+
+function ArgsReader:reset(str)
+    self.str = str or ""
+    self.pos = 1
+end
+
+function ArgsReader:eos()
+    return self.pos >= #self.str
+end
+
+--- consumes whitespace and an optional comma
+--- @return boolean c whether a comma was consumed
+function ArgsReader:comma_wsp()
+    -- (wsp+ comma? wsp*) | (comma wsp*)
+    local i, j, c = self.str:find("^%s+(,?)%s*", self.pos)
+    if not i then i, j, c = self.str:find("^(,)%s*", self.pos) end
+    if not i then return false end
+    self.pos = j + 1
+    return c == ","
+end
+
+function ArgsReader:num()
+    -- integer or floating-point number
+    local num = self.str:match("^[%-%+]?%.%d+", self.pos)  -- +.1234
+    if not num then
+        num = self.str:match("^[%-%+]?%d+%.%d*", self.pos) -- +123. -12.34
+    end
+    if not num then
+        num = self.str:match("^[%-%+]?%d+", self.pos) -- +123
+    end
+    if not num then return end
+    self.pos = self.pos + #num
+
+    -- exponent (optional)
+    local exp = self.str:match("^[eE][%-%+]?%d+", self.pos)
+    if exp then
+        self.pos = self.pos + #exp
+        num = num .. exp
+    end
+    return tonumber(num, 10)
+end
+
+function ArgsReader:coords()
+    local x = self:num()
+    if not x then return end
+    self:comma_wsp()
+    local y = self:num()
+    if not y then return end
+    return x, y
+end
+
+function ArgsReader:flag()
+    local flag = self.str:match("[01]", self.pos)
+    if not flag then return end
+    self.pos = self.pos + 1
+    return flag == "1"
+end
+
 local renderer = {}
 
 function renderer:empty(svg, options)
@@ -43,111 +111,140 @@ function renderer:empty(svg, options)
     local prev_ctrly = 0
 
     -- iterate through all dem commands
+    local reader = ArgsReader()
     for op, strargs in string.gmatch(pathdef, "%s*([MmLlHhVvCcSsQqTtAaZz])%s*([^MmLlHhVvCcSsQqTtAaZz]*)%s*") do
-        local args = {}
-
-        -- parse command arguments
-        if strargs ~= nil and #strargs > 0 then
-            for arg in string.gmatch(strargs, "%-?[^%s,%-]+") do
-                table.insert(args, 1, tonumber(arg, 10))
-            end
-        end
+        reader:reset(strargs)
 
         if op == "M" then
             -- move to
-            while #args >= 2 do
-                path:move_to(table.remove(args), table.remove(args))
-            end
+            repeat
+                local x, y = reader:coords()
+                if not x then break end
+                path:move_to(x, y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "m" then
             -- move to (relative)
-            while #args >= 2 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                path:move_to(cpx + table.remove(args), cpy + table.remove(args))
-            end
+                local x, y = reader:coords()
+                if not x then break end
+
+                path:move_to(cpx + x, cpy + y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "L" then
             -- line to
-            while #args >= 2 do
-                path:line_to(table.remove(args), table.remove(args))
-            end
+            repeat
+                local x, y = reader:coords()
+                if not x then break end
+
+                path:line_to(x, y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "l" then
             -- line to (relative)
-            while #args >= 2 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                path:line_to(cpx + table.remove(args), cpy + table.remove(args))
-            end
+                local x, y = reader:coords()
+                if not x then break end
+
+                path:line_to(cpx + x, cpy + y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "H" then
             -- line to (horizontal)
-            while #args >= 1 do
+            repeat
                 local _, cpy = path:last_point()
 
-                path:line_to(table.remove(args), cpy)
-            end
+                local x = reader:num()
+                if not x then break end
+
+                path:line_to(x, cpy)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "h" then
             -- line to (horizontal, relative)
-            while #args >= 1 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                path:line_to(cpx + table.remove(args), cpy)
-            end
+                local x = reader:num()
+                if not x then break end
+
+                path:line_to(cpx + x, cpy)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "V" then
             -- line to (vertical)
-            while #args >= 1 do
+            repeat
                 local cpx = path:last_point()
 
-                path:line_to(cpx, table.remove(args))
-            end
+                local y = reader:num()
+                if not y then break end
+
+                path:line_to(cpx, y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "v" then
             -- line to (vertical, relative)
-            while #args >= 1 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                path:line_to(cpx, cpy + table.remove(args))
-            end
+                local y = reader:num()
+                if not y then break end
+
+                path:line_to(cpx, cpy + y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "C" then
             -- cubic bezier curve
-            while #args >= 6 do
-                local x1 = table.remove(args)
-                local y1 = table.remove(args)
-                local x2 = table.remove(args)
-                local y2 = table.remove(args)
-                local x = table.remove(args)
-                local y = table.remove(args)
+            repeat
+                local x1, y1 = reader:coords()
+                if not x1 then break end
+                reader:comma_wsp()
+                local x2, y2 = reader:coords()
+                if not x2 then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
 
                 path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
                 prev_ctrly = y2
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "c" then
             -- cubic bezier curve (relative)
-            while #args >= 6 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local x1 = cpx + table.remove(args)
-                local y1 = cpy + table.remove(args)
-                local x2 = cpx + table.remove(args)
-                local y2 = cpy + table.remove(args)
-                local x = cpx + table.remove(args)
-                local y = cpy + table.remove(args)
+                local x1, y1 = reader:coords()
+                if not x1 then break end
+                reader:comma_wsp()
+                local x2, y2 = reader:coords()
+                if not x2 then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
+
+                x1 = cpx + x1
+                y1 = cpy + y1
+                x2 = cpx + x2
+                y2 = cpy + y2
+                x = cpx + x
+                y = cpy + y
 
                 path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
                 prev_ctrly = y2
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "S" then
             -- smooth cubic Bézier curve
-            while #args >= 4 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local x2 = table.remove(args)
-                local y2 = table.remove(args)
-                local x = table.remove(args)
-                local y = table.remove(args)
+                local x2, y2 = reader:coords()
+                if not x2 then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
 
                 -- calculate the start control point
                 local x1 = cpx + cpx - prev_ctrlx
@@ -158,16 +255,22 @@ function renderer:empty(svg, options)
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
                 prev_ctrly = y2
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "s" then
             -- smooth cubic Bézier curve (relative)
-            while #args >= 4 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local x2 = cpx + table.remove(args)
-                local y2 = cpy + table.remove(args)
-                local x = cpx + table.remove(args)
-                local y = cpy + table.remove(args)
+                local x2, y2 = reader:coords()
+                if not x2 then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
+
+                x2 = cpx + x2
+                y2 = cpy + y2
+                x = cpx + x
+                y = cpy + y
 
                 -- calculate the start control point
                 local x1 = cpx + cpx - prev_ctrlx
@@ -178,44 +281,51 @@ function renderer:empty(svg, options)
                 -- remember the end control point for the next command
                 prev_ctrlx = x2
                 prev_ctrly = y2
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "Q" then
             -- quadratic Bézier curve
-            while #args >= 4 do
-                local x1 = table.remove(args)
-                local y1 = table.remove(args)
-                local x = table.remove(args)
-                local y = table.remove(args)
+            repeat
+                local x1, y1 = reader:coords()
+                if not x1 then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
 
                 path:quadratic_curve_to(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
                 prev_ctrly = y1
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "q" then
             -- quadratic Bézier curve (relative)
-            while #args >= 4 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local x1 = cpx + table.remove(args)
-                local y1 = cpy + table.remove(args)
-                local x = cpx + table.remove(args)
-                local y = cpy + table.remove(args)
+                local x1, y1 = reader:coords()
+                if not x1 then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
+
+                x1 = cpx + x1
+                y1 = cpy + y1
+                x = cpx + x
+                y = cpy + y
 
                 path:quadratic_curve_to(x1, y1, x, y)
 
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
                 prev_ctrly = y1
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "T" then
             -- smooth quadratic Bézier curve
-            while #args >= 2 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local x = table.remove(args)
-                local y = table.remove(args)
+                local x, y = reader:coords()
+                if not x then break end
 
                 -- calculate the control point
                 local x1 = cpx + cpx - prev_ctrlx
@@ -226,14 +336,17 @@ function renderer:empty(svg, options)
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
                 prev_ctrly = y1
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "t" then
             -- smooth quadratic Bézier curve (relative)
-            while #args >= 2 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local x = cpx + table.remove(args)
-                local y = cpy + table.remove(args)
+                local x, y = reader:coords()
+                if not x then break end
+
+                x = cpx + x
+                y = cpy + y
 
                 -- calculate the control point
                 local x1 = cpx + cpx - prev_ctrlx
@@ -244,35 +357,52 @@ function renderer:empty(svg, options)
                 -- remember the end control point for the next command
                 prev_ctrlx = x1
                 prev_ctrly = y1
-            end
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "A" then
             -- arc to
-            while #args >= 7 do
-                local rx = table.remove(args)
-                local ry = table.remove(args)
-                local angle = table.remove(args)
-                local large_arc_flag = table.remove(args)
-                local sweep_flag = table.remove(args)
-                local x = table.remove(args)
-                local y = table.remove(args)
+            repeat
+                local rx, ry = reader:coords()
+                if not rx then break end
+                reader:comma_wsp()
+                local angle = reader:num()
+                if not angle then break end
+                reader:comma_wsp()
+                local large_arc = reader:flag()
+                if large_arc == nil then break end
+                reader:comma_wsp()
+                local sweep = reader:flag()
+                if sweep == nil then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
 
-                path:elliptical_arc_to(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
-            end
+                path:elliptical_arc_to(rx, ry, angle, large_arc, sweep, x, y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "a" then
             -- arc to (relative)
-            while #args >= 7 do
+            repeat
                 local cpx, cpy = path:last_point()
 
-                local rx = table.remove(args)
-                local ry = table.remove(args)
-                local angle = table.remove(args)
-                local large_arc_flag = table.remove(args)
-                local sweep_flag = table.remove(args)
-                local x = cpx + table.remove(args)
-                local y = cpy + table.remove(args)
+                local rx, ry = reader:coords()
+                if not rx then break end
+                reader:comma_wsp()
+                local angle = reader:num()
+                if not angle then break end
+                reader:comma_wsp()
+                local large_arc = reader:flag()
+                if large_arc == nil then break end
+                reader:comma_wsp()
+                local sweep = reader:flag()
+                if sweep == nil then break end
+                reader:comma_wsp()
+                local x, y = reader:coords()
+                if not x then break end
 
-                path:elliptical_arc_to(rx, ry, angle, large_arc_flag ~= 0, sweep_flag ~= 0, x, y)
-            end
+                x = cpx + x
+                y = cpy + y
+
+                path:elliptical_arc_to(rx, ry, angle, large_arc, sweep, x, y)
+            until not reader:comma_wsp() and reader:eos()
         elseif op == "Z" or op == "z" then
             -- close shape (relative and absolute are the same)
             path:close_path()
