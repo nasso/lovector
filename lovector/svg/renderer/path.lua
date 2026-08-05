@@ -115,82 +115,63 @@ function renderer:empty(svg, options)
     for op, strargs in string.gmatch(pathdef, "%s*([MmLlHhVvCcSsQqTtAaZz])%s*([^MmLlHhVvCcSsQqTtAaZz]*)%s*") do
         reader:reset(strargs)
 
-        if op == "M" then
+        if op == "M" or op == "m" then
             -- move to
             repeat
                 local x, y = reader:coords()
                 if not x then break end
+
+                if op == "m" then
+                    local cpx, cpy = path:last_point()
+                    x = cpx + x
+                    y = cpy + y
+                end
+
                 path:move_to(x, y)
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "m" then
-            -- move to (relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local x, y = reader:coords()
-                if not x then break end
-
-                path:move_to(cpx + x, cpy + y)
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "L" then
+        elseif op == "L" or op == "l" then
             -- line to
             repeat
                 local x, y = reader:coords()
                 if not x then break end
 
+                if op == "l" then
+                    local cpx, cpy = path:last_point()
+                    x = cpx + x
+                    y = cpy + y
+                end
+
                 path:line_to(x, y)
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "l" then
-            -- line to (relative)
+        elseif op == "H" or op == "h" then
+            -- line to (horizontal)
             repeat
                 local cpx, cpy = path:last_point()
 
-                local x, y = reader:coords()
-                if not x then break end
-
-                path:line_to(cpx + x, cpy + y)
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "H" then
-            -- line to (horizontal)
-            repeat
-                local _, cpy = path:last_point()
-
                 local x = reader:num()
                 if not x then break end
+
+                if op == "h" then
+                    x = cpx + x
+                end
 
                 path:line_to(x, cpy)
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "h" then
-            -- line to (horizontal, relative)
+        elseif op == "V" or op == "v" then
+            -- line to (vertical)
             repeat
                 local cpx, cpy = path:last_point()
 
-                local x = reader:num()
-                if not x then break end
-
-                path:line_to(cpx + x, cpy)
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "V" then
-            -- line to (vertical)
-            repeat
-                local cpx = path:last_point()
-
                 local y = reader:num()
                 if not y then break end
+
+                if op == "v" then
+                    y = cpy + y
+                end
 
                 path:line_to(cpx, y)
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "v" then
-            -- line to (vertical, relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local y = reader:num()
-                if not y then break end
-
-                path:line_to(cpx, cpy + y)
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "C" then
+        elseif op == "C" or op == "c" then
             -- cubic bezier curve
             repeat
                 local x1, y1 = reader:coords()
@@ -202,32 +183,15 @@ function renderer:empty(svg, options)
                 local x, y = reader:coords()
                 if not x then break end
 
-                path:bezier_curve_to(x1, y1, x2, y2, x, y)
-
-                -- remember the end control point for the next command
-                prev_ctrlx = x2
-                prev_ctrly = y2
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "c" then
-            -- cubic bezier curve (relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local x1, y1 = reader:coords()
-                if not x1 then break end
-                reader:comma_wsp()
-                local x2, y2 = reader:coords()
-                if not x2 then break end
-                reader:comma_wsp()
-                local x, y = reader:coords()
-                if not x then break end
-
-                x1 = cpx + x1
-                y1 = cpy + y1
-                x2 = cpx + x2
-                y2 = cpy + y2
-                x = cpx + x
-                y = cpy + y
+                if op == "c" then
+                    local cpx, cpy = path:last_point()
+                    x1 = cpx + x1
+                    y1 = cpy + y1
+                    x2 = cpx + x2
+                    y2 = cpy + y2
+                    x = cpx + x
+                    y = cpy + y
+                end
 
                 path:bezier_curve_to(x1, y1, x2, y2, x, y)
 
@@ -235,7 +199,7 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x2
                 prev_ctrly = y2
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "S" then
+        elseif op == "S" or op == "s" then
             -- smooth cubic Bézier curve
             repeat
                 local cpx, cpy = path:last_point()
@@ -246,31 +210,12 @@ function renderer:empty(svg, options)
                 local x, y = reader:coords()
                 if not x then break end
 
-                -- calculate the start control point
-                local x1 = cpx + cpx - prev_ctrlx
-                local y1 = cpy + cpy - prev_ctrly
-
-                path:bezier_curve_to(x1, y1, x2, y2, x, y)
-
-                -- remember the end control point for the next command
-                prev_ctrlx = x2
-                prev_ctrly = y2
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "s" then
-            -- smooth cubic Bézier curve (relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local x2, y2 = reader:coords()
-                if not x2 then break end
-                reader:comma_wsp()
-                local x, y = reader:coords()
-                if not x then break end
-
-                x2 = cpx + x2
-                y2 = cpy + y2
-                x = cpx + x
-                y = cpy + y
+                if op == "s" then
+                    x2 = cpx + x2
+                    y2 = cpy + y2
+                    x = cpx + x
+                    y = cpy + y
+                end
 
                 -- calculate the start control point
                 local x1 = cpx + cpx - prev_ctrlx
@@ -282,7 +227,7 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x2
                 prev_ctrly = y2
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "Q" then
+        elseif op == "Q" or op == "q" then
             -- quadratic Bézier curve
             repeat
                 local x1, y1 = reader:coords()
@@ -291,27 +236,13 @@ function renderer:empty(svg, options)
                 local x, y = reader:coords()
                 if not x then break end
 
-                path:quadratic_curve_to(x1, y1, x, y)
-
-                -- remember the end control point for the next command
-                prev_ctrlx = x1
-                prev_ctrly = y1
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "q" then
-            -- quadratic Bézier curve (relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local x1, y1 = reader:coords()
-                if not x1 then break end
-                reader:comma_wsp()
-                local x, y = reader:coords()
-                if not x then break end
-
-                x1 = cpx + x1
-                y1 = cpy + y1
-                x = cpx + x
-                y = cpy + y
+                if op == "q" then
+                    local cpx, cpy = path:last_point()
+                    x1 = cpx + x1
+                    y1 = cpy + y1
+                    x = cpx + x
+                    y = cpy + y
+                end
 
                 path:quadratic_curve_to(x1, y1, x, y)
 
@@ -319,7 +250,7 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x1
                 prev_ctrly = y1
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "T" then
+        elseif op == "T" or op == "t" then
             -- smooth quadratic Bézier curve
             repeat
                 local cpx, cpy = path:last_point()
@@ -327,26 +258,10 @@ function renderer:empty(svg, options)
                 local x, y = reader:coords()
                 if not x then break end
 
-                -- calculate the control point
-                local x1 = cpx + cpx - prev_ctrlx
-                local y1 = cpy + cpy - prev_ctrly
-
-                path:quadratic_curve_to(x1, y1, x, y)
-
-                -- remember the end control point for the next command
-                prev_ctrlx = x1
-                prev_ctrly = y1
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "t" then
-            -- smooth quadratic Bézier curve (relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local x, y = reader:coords()
-                if not x then break end
-
-                x = cpx + x
-                y = cpy + y
+                if op == "t" then
+                    x = cpx + x
+                    y = cpy + y
+                end
 
                 -- calculate the control point
                 local x1 = cpx + cpx - prev_ctrlx
@@ -358,7 +273,7 @@ function renderer:empty(svg, options)
                 prev_ctrlx = x1
                 prev_ctrly = y1
             until not reader:comma_wsp() and reader:eos()
-        elseif op == "A" then
+        elseif op == "A" or op == "a" then
             -- arc to
             repeat
                 local rx, ry = reader:coords()
@@ -376,30 +291,11 @@ function renderer:empty(svg, options)
                 local x, y = reader:coords()
                 if not x then break end
 
-                path:elliptical_arc_to(rx, ry, angle, large_arc, sweep, x, y)
-            until not reader:comma_wsp() and reader:eos()
-        elseif op == "a" then
-            -- arc to (relative)
-            repeat
-                local cpx, cpy = path:last_point()
-
-                local rx, ry = reader:coords()
-                if not rx then break end
-                reader:comma_wsp()
-                local angle = reader:num()
-                if not angle then break end
-                reader:comma_wsp()
-                local large_arc = reader:flag()
-                if large_arc == nil then break end
-                reader:comma_wsp()
-                local sweep = reader:flag()
-                if sweep == nil then break end
-                reader:comma_wsp()
-                local x, y = reader:coords()
-                if not x then break end
-
-                x = cpx + x
-                y = cpy + y
+                if op == "a" then
+                    local cpx, cpy = path:last_point()
+                    x = cpx + x
+                    y = cpy + y
+                end
 
                 path:elliptical_arc_to(rx, ry, angle, large_arc, sweep, x, y)
             until not reader:comma_wsp() and reader:eos()
